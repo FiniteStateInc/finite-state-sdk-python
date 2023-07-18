@@ -27,5 +27,14 @@ View the Python API Docs here: [https://finitestateinc.github.io/finite-state-sd
 $ pip3 install finite-state-sdk
 ```
 
-Our teams are working to add additional programming language and package manager support for Finite State SDKs.
+To use it:
 
+```
+import finite_state_sdk
+```
+
+# Finite State API
+
+For more information about Finite State's APIs, see: [https://docs.finitestate.io](https://docs.finitestate.io).
+
+Our teams are working to add additional programming language and package manager support for Finite State SDKs.
