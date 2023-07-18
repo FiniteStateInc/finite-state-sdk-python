@@ -1,0 +1,40 @@
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "finite-state-sdk"
+version = "0.0.1"
+authors = [
+  "Finite State, Inc. <developer-tools@finitestate.io>"
+]
+maintainers = [
+   "Finite State, Inc. <developer-tools@finitestate.io>"
+]
+repository = "https://www.github.com/FiniteStateInc/finite-state-sdk"
+homepage = "https://github.com/FiniteStateInc/finite-state-sdk"
+description = "The official Finite State Python SDK."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Topic :: Security",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+[tool.poetry.dependencies]
+requests = ">=2.31.0"
+
+[project.urls]
+"Bug Tracker" = "https://github.com/FiniteStateInc/finite-state-sdk/issues"
+
+exclude = ".gitignore"
