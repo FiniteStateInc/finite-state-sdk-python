@@ -17,9 +17,7 @@ The cloud-based SaaS platform for SBOM and Product Security management enables y
 
 Finite State's powerful GraphQL API gives you and your teams access to the incredibly rich data you have in the platform. These SDKs, tools, and examples help your team to connect to Finite State APIs quickly and easily.
 
-# Installing the SDK
-
-## Python
+# Installing the Python SDK
 
 View the Python API Docs here: [https://finitestateinc.github.io/finite-state-sdk/finite_state_sdk.html](https://finitestateinc.github.io/finite-state-sdk/finite_state_sdk.html).
 
@@ -31,6 +29,13 @@ To use it:
 
 ```
 import finite_state_sdk
+```
+
+## Generating the docs
+
+```
+$ pip3 install pdoc
+$ pdoc -o docs -d markdown finite_state_sdk
 ```
 
 # Finite State API

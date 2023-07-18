@@ -6,13 +6,13 @@ build-backend = "poetry.core.masonry.api"
 name = "finite-state-sdk"
 version = "0.0.1"
 authors = [
-  "Finite State, Inc. <developer-tools@finitestate.io>"
+    "Finite State, Inc. <developer-tools@finitestate.io>"
 ]
 maintainers = [
-   "Finite State, Inc. <developer-tools@finitestate.io>"
+    "Finite State, Inc. <developer-tools@finitestate.io>"
 ]
-repository = "https://www.github.com/FiniteStateInc/finite-state-sdk"
-homepage = "https://github.com/FiniteStateInc/finite-state-sdk"
+repository = "https://www.github.com/FiniteStateInc/finite-state-sdk-python"
+homepage = "https://github.com/FiniteStateInc/finite-state-sdk-python"
 description = "The official Finite State Python SDK."
 readme = "README.md"
 license = "MIT"
@@ -35,6 +35,6 @@ classifiers = [
 requests = ">=2.31.0"
 
 [project.urls]
-"Bug Tracker" = "https://github.com/FiniteStateInc/finite-state-sdk/issues"
+"Bug Tracker" = "https://github.com/FiniteStateInc/finite-state-sdk-python/issues"
 
 exclude = ".gitignore"
