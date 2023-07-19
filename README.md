@@ -19,7 +19,7 @@ Finite State's powerful GraphQL API gives you and your teams access to the incre
 
 # Installing the Python SDK
 
-View the Python API Docs here: [https://finitestateinc.github.io/finite-state-sdk/finite_state_sdk.html](https://finitestateinc.github.io/finite-state-sdk/finite_state_sdk.html).
+View the Python API Docs here: [https://finitestateinc.github.io/finite-state-sdk-python/finite_state_sdk.html](https://finitestateinc.github.io/finite-state-sdk-python/finite_state_sdk.html).
 
 ```
 $ pip3 install finite-state-sdk
