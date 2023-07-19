@@ -95,6 +95,52 @@ ALL_ASSET_VERSIONS = {
 }
 
 
+def asset_variables(asset_id=None, business_unit_id=None):
+    variables = {
+        "filter": {},
+        "after": None,
+        "first": 100
+    }
+
+    if asset_id is not None:
+        variables["filter"]["id"] = asset_id
+
+    if business_unit_id is not None:
+        variables["filter"]["group"] = {
+            "id": business_unit_id
+        }
+
+    return variables
+
+
+ALL_ASSETS = {
+    "query": """
+        query GetAllAssets(
+            $filter: AssetFilter!,
+            $after: String,
+            $first: Int
+            ) {
+                allAssets(
+                    filter: $filter,
+                    after: $after,
+                    first: $first
+                ) {
+                    _cursor
+                    id
+                    name
+                    createdAt
+                    ctx {
+                        asset
+                        businessUnits
+                        products
+                    }
+                }
+            }
+        """,
+    "variables": asset_variables
+}
+
+
 def artifact_variables(artifact_id=None, business_unit_id=None):
     variables = {
         "filter": {},

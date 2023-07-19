@@ -66,9 +66,9 @@ print(json.dumps(users, indent=4))
 Example Response:
 [
     {
-        "_cursor": "{\"id\":\"1625274673\"}",
-        "id": "1625274673",
-        "email": "nicholas@finitestate.io"
+        "_cursor": "{\"id\":\"xxxxxxxx73\"}",
+        "id": "xxxxxxxx73",
+        "email": "xxxxxxx@xxxxx.xxx"
     }
 ]
 """
@@ -88,21 +88,21 @@ print(json.dumps(product, indent=4))
 Example Response:
 {
     "createProduct": {
-        "id": "2620271926",
+        "id": "xxxxxxxx26",
         "name": "Nicholas Python API Created Product 2023-07-19-1026",
         "vendor": {
             "name": "My New Vendor"
         },
         "group": {
-            "id": "2620270956",
+            "id": "xxxxxxxx56",
             "name": "API Testing Business Unit"
         },
         "createdBy": {
-            "id": "1625274673",
-            "email": "nicholas@finitestate.io"
+            "id": "xxxxxxxx73",
+            "email": "xxxxxxx@xxxxxxxxxx.xxx"
         },
         "ctx": {
-            "businessUnit": "2620270956"
+            "businessUnit": "xxxxxxxxx56"
         }
     }
 }

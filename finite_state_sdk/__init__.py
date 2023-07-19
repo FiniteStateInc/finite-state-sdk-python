@@ -266,6 +266,34 @@ def get_all_asset_versions_for_product(token, organization_context, product_id):
     return get_all_paginated_results(token, organization_context, queries.ONE_PRODUCT_ALL_ASSET_VERSIONS['query'], queries.ONE_PRODUCT_ALL_ASSET_VERSIONS['variables'](product_id), 'allProducts')
 
 
+def get_all_assets(token, organization_context, asset_id=None, business_unit_id=None):
+    """
+    Gets all assets in the organization. Uses pagination to get all results.
+
+    Parameters
+    ----------
+    token : str
+        Auth token. This is the token returned by get_auth_token(). Just the token, do not include "Bearer" in this string, that is handled inside the method.
+    organization_context : str
+        Organization context. This is provided by the Finite State API management. It looks like "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx".
+    asset_id : str, optional
+        Asset ID to get, by default None. If None specified, will get all Assets. If specified, will get only the Asset with that ID.
+    business_unit_id : str, optional
+        Business Unit ID to filter by, by default None. If None specified, will get all Assets. If specified, will get only the Assets in the specified Business Unit.
+
+    Raises
+    ------
+    Exception
+        Raised if the query fails.
+
+    Returns
+    -------
+    list
+        List of Asset Objects
+    """
+    return get_all_paginated_results(token, organization_context, queries.ALL_ASSETS['query'], queries.ALL_ASSETS['variables'](asset_id, business_unit_id), 'allAssets')
+
+
 def get_all_asset_versions(token, organization_context):
     """
     Get all asset versions in the organization. Uses pagination to get all results.
@@ -1166,4 +1194,94 @@ def upload_test_results_file(token, organization_context, test_id=None, file_pat
 
     response = send_graphql_query(token, organization_context, graphql_query, variables)
     return response['data']
+
+
+def create_new_asset_version_and_upload_binary(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, version=None, file_path=None, product_id=None):
+    """
+    Creates a new Asset Version for an existing asset, and uploads a binary file for Finite State Binary Analysis.
+    By default, this uses the existing Business Unit and Created By User for the Asset. If you need to change these, you can provide the IDs for them.
+
+    Parameters
+    ----------
+    token : str
+        Auth token. This is the token returned by get_auth_token(). Just the token, do not include "Bearer" in this string, that is handled inside the method.
+    organization_context : str
+        Organization context. This is provided by the Finite State API management. It looks like "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx".
+    business_unit_id : str, optional
+        Business Unit ID to create the asset version for. If not provided, the existing Business Unit for the Asset will be used.
+    created_by_user_id : str, optional
+        Created By User ID to create the asset version for. If not provided, the existing Created By User for the Asset will be used.
+    asset_id : str, required
+        Asset ID to create the asset version for.
+    version : str, required
+        Version to create the asset version for.
+    file_path : str, required
+        Local path to the file to upload.
+    product_id : str, optional
+        Product ID to create the asset version for. If not provided, the existing Product for the Asset will be used, if it exists.
+
+    Raises
+    ------
+    ValueError
+        Raised if asset_id, version, or file_path are not provided.
+    Exception
+        Raised if any of the queries fail.
+
+    Returns
+    -------
+    dict
+        The response from the GraphQL query, a createAssetVersion Object.
+    """
+
+    assets = get_all_assets(token, organization_context, asset_id=asset_id)
+    asset = assets[0]
+
+    # get the asset name
+    asset_name = asset['name']
+
+    # get the existing asset product IDs
+    asset_product_ids = asset['ctx']['products']
+
+    # get the asset product ID
+    if product_id and product_id not in asset_product_ids:
+        asset_product_ids.append(product_id)
+
+    # if business_unit_id or created_by_user_id are not provided, get the existing asset
+    if not business_unit_id or not created_by_user_id:
+        if not business_unit_id:
+            business_unit_id = asset['businessUnit']['id']
+        if not created_by_user_id:
+            created_by_user_id = asset['createdByUser']['id']
+
+        if not business_unit_id:
+            raise ValueError("Business Unit ID is required and could not be retrieved from the existing asset")
+        if not created_by_user_id:
+            raise ValueError("Created By User ID is required and could not be retrieved from the existing asset")
+
+    if not asset_id:
+        raise ValueError("Asset ID is required")
+    if not version:
+        raise ValueError("Version is required")
+    if not file_path:
+        raise ValueError("File path is required")
+
+    # create the asset version
+    response = create_asset_version(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, asset_version_name=version)
+    # get the asset version ID
+    asset_version_id = response['createAssetVersion']['id']
+
+    # create the artifact
+    binary_artifact_name = f"{asset_name} {version} - Binary"
+    response = create_artifact(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_version_id=asset_version_id, artifact_name=binary_artifact_name, product_id=asset_product_ids)
+    # get the artifact ID
+    binary_artifact_id = response['createArtifact']['id']
+
+    # create the test
+    binary_test_name = f"{asset_name} {version} - Finite State Binary Analysis"
+    response = create_test_as_binary_analysis(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, artifact_id=binary_artifact_id, product_id=asset_product_ids, test_name=binary_test_name)
+    binary_test_id = response['createTest']['id']
+
+    # upload file for binary test
+    response = upload_file_for_binary_analysis(token, organization_context, test_id=binary_test_id, file_path=file_path)
+    return response
 
