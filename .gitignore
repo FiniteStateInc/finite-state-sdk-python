@@ -1,2 +1,5 @@
 DEPLOYING
 dist
+venv
+.secret*
+token.txt
