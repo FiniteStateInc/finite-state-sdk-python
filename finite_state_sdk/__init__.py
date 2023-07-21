@@ -540,7 +540,7 @@ def create_product(token, organization_context, business_unit_id=None, created_b
     return response['data']
 
 
-def create_test(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, artifact_id=None, test_name=None, product_id=None, test_type=None):
+def create_test(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, artifact_id=None, test_name=None, product_id=None, test_type=None, tools=[]):
     """
     Create a new Test object for uploading files.
 
@@ -628,7 +628,8 @@ def create_test(token, organization_context, business_unit_id=None, created_by_u
             "ctx": {
                 "asset": asset_id,
                 "businessUnits": [business_unit_id]
-            }
+            },
+            "tools": tools
         }
     }
 
@@ -668,7 +669,13 @@ def create_test_as_binary_analysis(token, organization_context, business_unit_id
     Returns:
         dict: createTest Object
     """
-    return create_test(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, artifact_id=artifact_id, test_name=test_name, product_id=product_id, test_type="finite_state_binary_analysis")
+    tools = [
+        {
+            "description": "SBOM and Vulnerability Analysis from Finite State Binary SCA and Binary SAST.",
+            "name": "Finite State Binary Analysis"
+        }
+    ]
+    return create_test(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, artifact_id=artifact_id, test_name=test_name, product_id=product_id, test_type="finite_state_binary_analysis", tools=tools)
 
 
 def create_test_as_cyclone_dx(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, artifact_id=None, test_name=None, product_id=None):
