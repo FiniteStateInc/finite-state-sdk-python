@@ -7,6 +7,11 @@ jobs:
   generate-sbom:
     runs-on: ubuntu-latest
     steps:
+      - name: Set up Git
+        run: |
+          git config --global user.email "developer-tools@finitestate.io"
+          git config --global user.name "Finite State Developers"
+
       - name: Checkout code
         uses: actions/checkout@v2
 
