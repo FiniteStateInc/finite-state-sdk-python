@@ -563,6 +563,8 @@ def create_test(token, organization_context, business_unit_id=None, created_by_u
             Product ID to associate the Test with. If not specified, the Test will not be associated with a product.
         test_type (str, required):
             The type of test being created. Valid values are "cyclonedx" and "finite_state_binary_analysis".
+        tools (list, optional):
+            List of Tool objects used to perform the test. Each Tool object is a dict that should have a "name" and "description" field. This is used to describe the actual scanner that was used to perform the test.
 
     Raises:
         ValueError: Raised if business_unit_id, created_by_user_id, asset_id, artifact_id, test_name, or test_type are not provided.
