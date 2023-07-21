@@ -328,7 +328,7 @@ def create_new_asset_version_artifact_and_test_for_upload(token, organization_co
         test_id = response['createTest']['id']
         return test_id
 
-    elif test_type == "third-party-scanner":
+    elif test_type == "cyclonedx":
         # create the artifact
         if not artifact_description:
             artifact_description = "Unspecified Artifact"
@@ -344,56 +344,8 @@ def create_new_asset_version_artifact_and_test_for_upload(token, organization_co
         test_id = response['createTest']['id']
         return test_id
 
-
-def create_new_asset_version_and_upload_test_results(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, version=None, file_path=None, product_id=None, test_type=None, artifact_description=""):
-    """
-    Creates a new Asset Version for an existing asset, and uploads test results for that asset version.
-    By default, this uses the existing Business Unit and Created By User for the Asset. If you need to change these, you can provide the IDs for them.
-
-    Args:
-        token (str):
-            Auth token. This is the token returned by get_auth_token(). Just the token, do not include "Bearer" in this string, that is handled inside the method.
-        organization_context (str):
-            Organization context. This is provided by the Finite State API management. It looks like "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx".
-        business_unit_id (str, optional):
-            Business Unit ID to create the asset version for. If not provided, the existing Business Unit for the Asset will be used.
-        created_by_user_id (str, optional):
-            Created By User ID to create the asset version for. If not provided, the existing Created By User for the Asset will be used.
-        asset_id (str, required):
-            Asset ID to create the asset version for.
-        version (str, required):
-            Version to create the asset version for.
-        file_path (str, required):
-            Path to the test results file to upload.
-        product_id (str, optional):
-            Product ID to create the asset version for. If not provided, the existing Product for the Asset will be used.
-        test_type (str, required):
-            Test type. This must be "cyclonedx" or one of the list of supported third party scanner types. For the full list of supported third party scanner types, see the Finite State API documentation.
-        artifact_description (str, optional):
-            Description of the artifact being scanned (e.g. "Source Code Repository", "Container Image"). If not provided, the default artifact description will be used.
-
-    Raises:
-        ValueError: If the asset_id, version, or file_path are not provided.
-        Exception: If the test_type is not a supported third party scanner type, or if the query fails.
-
-    Returns:
-        dict: The response from the GraphQL query, a createAssetVersion Object.
-    """
-    if not asset_id:
-        raise ValueError("Asset ID is required")
-    if not version:
-        raise ValueError("Version is required")
-    if not file_path:
-        raise ValueError("File path is required")
-    if not test_type:
-        raise ValueError("Test type is required")
-
-    # create the asset version and test
-    binary_test_id = create_new_asset_version_artifact_and_test_for_upload(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, version=version, product_id=product_id, test_type=test_type, artifact_description=artifact_description)
-
-    # upload test results file
-    response = upload_test_results_file(token, organization_context, test_id=binary_test_id, file_path=file_path)
-    return response
+    else:
+        raise ValueError(f"Test type {test_type} is not supported")
 
 
 def create_new_asset_version_and_upload_binary(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, version=None, file_path=None, product_id=None, artifact_description=None):
@@ -443,6 +395,58 @@ def create_new_asset_version_and_upload_binary(token, organization_context, busi
     # upload file for binary test
     response = upload_file_for_binary_analysis(token, organization_context, test_id=binary_test_id, file_path=file_path)
     return response
+
+
+def create_new_asset_version_and_upload_test_results(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, version=None, file_path=None, product_id=None, test_type=None, artifact_description=""):
+    """
+    Creates a new Asset Version for an existing asset, and uploads test results for that asset version.
+    By default, this uses the existing Business Unit and Created By User for the Asset. If you need to change these, you can provide the IDs for them.
+
+    Args:
+        token (str):
+            Auth token. This is the token returned by get_auth_token(). Just the token, do not include "Bearer" in this string, that is handled inside the method.
+        organization_context (str):
+            Organization context. This is provided by the Finite State API management. It looks like "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx".
+        business_unit_id (str, optional):
+            Business Unit ID to create the asset version for. If not provided, the existing Business Unit for the Asset will be used.
+        created_by_user_id (str, optional):
+            Created By User ID to create the asset version for. If not provided, the existing Created By User for the Asset will be used.
+        asset_id (str, required):
+            Asset ID to create the asset version for.
+        version (str, required):
+            Version to create the asset version for.
+        file_path (str, required):
+            Path to the test results file to upload.
+        product_id (str, optional):
+            Product ID to create the asset version for. If not provided, the existing Product for the Asset will be used.
+        test_type (str, required):
+            Test type. This must be "cyclonedx" or one of the list of supported third party scanner types. For the full list of supported third party scanner types, see the Finite State API documentation.
+        artifact_description (str, optional):
+            Description of the artifact being scanned (e.g. "Source Code Repository", "Container Image"). If not provided, the default artifact description will be used.
+
+    Raises:
+        ValueError: If the asset_id, version, or file_path are not provided.
+        Exception: If the test_type is not a supported third party scanner type, or if the query fails.
+
+    Returns:
+        dict: The response from the GraphQL query, a createAssetVersion Object.
+    """
+    if not asset_id:
+        raise ValueError("Asset ID is required")
+    if not version:
+        raise ValueError("Version is required")
+    if not file_path:
+        raise ValueError("File path is required")
+    if not test_type:
+        raise ValueError("Test type is required")
+
+    # create the asset version and test
+    test_id = create_new_asset_version_artifact_and_test_for_upload(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, version=version, product_id=product_id, test_type=test_type, artifact_description=artifact_description)
+
+    # upload test results file
+    response = upload_test_results_file(token, organization_context, test_id=test_id, file_path=file_path)
+    return response
+
 
 
 def create_product(token, organization_context, business_unit_id=None, created_by_user_id=None, product_name=None, product_description=None, vendor_id=None, vendor_name=None):
