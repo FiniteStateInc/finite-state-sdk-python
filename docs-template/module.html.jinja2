@@ -1,0 +1,19 @@
+{#
+We want to extend the default template instead of defining everything ourselves.
+#}
+{% extends "default/module.html.jinja2" %}
+
+{#
+We can redefine individual blocks.
+For example, if the `--favicon` option does not do what you want, you can specify a replacement like this.
+#}
+{% block favicon %}
+    <link rel="shortcut icon" href="https://finitestate.io/hubfs/cropped-fs-favicon-01-1-32x32.png"/>
+{% endblock %}
+
+{#
+We can access system environment variables in the template, for example to pass version information.
+#}
+{% block nav_footer %}
+    <footer>finite-state-sdk-python v{{ env["VERSION"] }}</footer>
+{% endblock %}
