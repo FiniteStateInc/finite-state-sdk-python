@@ -32,4 +32,4 @@ jobs:
         run: |
           git add sbom/finite-state-sdk-cyclonedx.sbom.json
           git commit -m "Add SBOM JSON file"
-          git push origin HEAD:${{ github.head_ref }}
+          git push
