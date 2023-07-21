@@ -5,7 +5,6 @@ charset-normalizer==3.2.0
 cyclonedx-bom==3.11.2
 cyclonedx-python-lib==3.1.5
 docutils==0.20.1
-finite-state-sdk==0.0.2
 idna==3.4
 importlib-metadata==6.8.0
 jaraco.classes==3.3.0
