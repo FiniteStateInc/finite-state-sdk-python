@@ -1,0 +1,30 @@
+name: Generate SBOM
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  generate-sbom:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.10  # Use the desired Python version
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate SBOM
+        run: |
+          # Run the 'cyclonedx-py' command to generate the SBOM in JSON format
+          cyclonedx-py -r --format json -o sbom/finite-state-sdk-cyclonedx.sbom.json
+
+      - name: Commit SBOM and Push Changes
+        run: |
+          git add sbom/finite-state-sdk-cyclonedx.sbom.json
+          git commit -m "Add SBOM JSON file"
+          git push origin HEAD
