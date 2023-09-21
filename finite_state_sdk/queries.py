@@ -212,6 +212,165 @@ ALL_PRODUCTS = {
     }
 }
 
+GET_PRODUCT_ASSET_VERSIONS = {
+    "query": """
+query GetProductAssetVersions(
+    $filter: ProductFilter!,
+    $after: String,
+    $first: Int
+    ) {
+    allProducts(
+        filter: $filter,
+        after: $after,
+        first: $first
+    ) {
+        _cursor
+        id
+        name
+        createdAt
+        assets {
+            id
+            name
+            relativeRiskScore
+            asset {
+                id
+                name
+            }
+        }
+    }
+}""",
+    "variables": lambda product_id: {
+        "filter": {
+            "id": product_id
+        },
+        "after": None,
+        "first": 100
+    }
+}
+
+
+def _create_GET_FINDINGS_VARIABLES(asset_version_id=None):
+    if asset_version_id is not None:
+        return {
+            "filter": {
+                "assetVersionRefId": asset_version_id,
+                "mergedFindingRefId": None
+            },
+            "after": None,
+            "first": 1000
+        }
+
+
+GET_FINDINGS = {
+    "query": """
+query GetFindingsForAnAssetVersion (
+    $filter: FindingFilter,
+    $after: String,
+    $first: Int
+) {
+    allFindings(filter: $filter,
+                after: $after,
+                first: $first
+    ) {
+        _cursor
+        id
+        title
+        vulnIdFromTool
+        description
+        severity
+        riskScore
+        affects {
+            name
+            version
+        }
+    }
+}""",
+    "variables": lambda asset_version_id=None: _create_GET_FINDINGS_VARIABLES(asset_version_id=asset_version_id)
+}
+
+
+def _create_GET_SOFTWARE_COMPONENTS_VARIABLES(asset_version_id=None, type=None):
+    variables = {
+        "filter": {
+            "mergedComponentRefId": None
+        },
+        "after": None,
+        "first": 100
+    }
+
+    if asset_version_id is not None:
+        variables["filter"]["assetVersionRefId"] = asset_version_id
+
+    if type is not None:
+        variables["filter"]["type"] = type
+
+    return variables
+
+
+GET_SOFTWARE_COMPONENTS = {
+    "query": """
+query GetSoftwareComponentsForAnAssetVersion (
+    $filter: SoftwareComponentInstanceFilter,
+    $after: String,
+    $first: Int
+) {
+    allSoftwareComponentInstances(filter: $filter,
+                                  after: $after,
+                                  first: $first
+    ) {
+        _cursor
+        id
+        name
+        version
+        hashes {
+            alg
+            content
+        }
+        licenses {
+            name
+            copyLeft
+            isFsfLibre
+            isOsiApproved
+        }
+        type
+    }
+}
+""",
+    "variables": lambda asset_version_id=None, type=None: _create_GET_SOFTWARE_COMPONENTS_VARIABLES(asset_version_id=asset_version_id, type=type)
+}
+
+
+GET_PRODUCTS_BUSINESS_UNIT = {
+    "query": """
+        query GetAllProducts(
+            $filter: ProductFilter!,
+            $after: String,
+            $first: Int
+            ) {
+                allProducts(
+                    filter: $filter,
+                    after: $after,
+                    first: $first
+                ) {
+                    _cursor
+                    id
+                    name
+                    createdAt
+                }
+            }
+        """,
+    "variables": lambda business_unit_id: {
+        "filter": {
+            "group": {
+                "id": business_unit_id
+            }
+        },
+        "after": None,
+        "first": 100
+    }
+}
+
+
 ONE_PRODUCT_ALL_ASSET_VERSIONS = {
     "query": """
         query GetProductAssetVersions(

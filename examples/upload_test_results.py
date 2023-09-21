@@ -2,6 +2,8 @@ import finite_state_sdk
 import json
 import os
 
+from finite_state_sdk.token_cache import TokenCache
+
 """
 This is an example of uploading test results from a third party scanner such as an SCA or SAST tool.
 NOTE, the create_new_asset_version_and_upload_test_results function is a convenience function that
@@ -48,7 +50,8 @@ ORGANIZATION_CONTEXT = os.environ.get("ORGANIZATION_CONTEXT")
 
 # Get an auth token - this is a bearer token that you will use for all subsequent requests
 # The token is valid for 24 hours
-token = finite_state_sdk.get_auth_token(CLIENT_ID, CLIENT_SECRET)
+token_cache = TokenCache(ORGANIZATION_CONTEXT)
+token = token_cache.get_token(CLIENT_ID, CLIENT_SECRET)
 
 # get all business units to get the business_unit_id
 business_units = finite_state_sdk.get_all_business_units(token, ORGANIZATION_CONTEXT)
