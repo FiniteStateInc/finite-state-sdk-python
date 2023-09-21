@@ -1053,6 +1053,216 @@ def get_auth_token(client_id, client_secret, token_url=TOKEN_URL, audience=AUDIE
     return auth_token
 
 
+def get_findings(token, organization_context, asset_version_id=None):
+    """
+    Gets all the Findings for an Asset Version. Uses pagination to get all results.
+
+    Args:
+        token (str):
+            Auth token. This is the token returned by get_auth_token(). Just the token, do not include "Bearer" in this string.
+        organization_context (str):
+            Organization context. This is provided by the Finite State API management. It looks like "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx".
+        asset_version_id (str, optional):
+            Asset Version ID to get findings for. If not provided, will get all findings in the organization.
+
+    Raises:
+        Exception: Raised if the query fails, required parameters are not specified, or parameters are incompatible.
+
+    Returns:
+        list: List of Finding Objects
+    """
+    if not asset_version_id:
+        raise Exception("Asset Version ID is required")
+
+    return get_all_paginated_results(token, organization_context, queries.GET_FINDINGS['query'], queries.GET_FINDINGS['variables'](asset_version_id=asset_version_id), 'allFindings')
+
+
+def get_product_asset_versions(token, organization_context, product_id=None):
+    """
+    Gets all the asset versions for a product.
+
+    Args:
+        token (str):
+            Auth token. This is the token returned by get_auth_token(). Just the token, do not include "Bearer" in this string.
+        organization_context (str):
+            Organization context. This is provided by the Finite State API management. It looks like "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx".
+        product_id (str, optional):
+            Product ID to get asset versions for. If not provided, will get all asset versions in the organization.
+
+    Raises:
+        Exception: Raised if the query fails, required parameters are not specified, or parameters are incompatible.
+
+    Returns:
+        list: List of AssetVersion Objects
+    """
+    if not product_id:
+        raise Exception("Product ID is required")
+
+    return get_all_paginated_results(token, organization_context, queries.GET_PRODUCT_ASSET_VERSIONS['query'], queries.GET_PRODUCT_ASSET_VERSIONS['variables'](product_id), 'allProducts')
+
+
+def get_products(token, organization_context, business_unit_id=None):
+    """
+    Gets all the products for the specified business unit.
+
+    Args:
+        token (str):
+            Auth token. This is the token returned by get_auth_token(). Just the token, do not include "Bearer" in this string, that is handled inside the method.
+        organization_context (str):
+            Organization context. This is provided by the Finite State API management. It looks like "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx".
+        business_unit_id (str, optional):
+            Business Unit ID to get products for. If not provided, will get all products in the organization.
+
+    Raises:
+        Exception: Raised if the query fails, required parameters are not specified, or parameters are incompatible.
+
+    Returns:
+        list: List of Product Objects
+    """
+
+    if not business_unit_id:
+        raise Exception("Business Unit ID is required")
+
+    return get_all_paginated_results(token, organization_context, queries.GET_PRODUCTS_BUSINESS_UNIT['query'], queries.GET_PRODUCTS_BUSINESS_UNIT['variables'](business_unit_id), 'allProducts')
+
+
+def get_software_components(token, organization_context, asset_version_id=None, type=None):
+    """
+    Gets all the Software Components for an Asset Version. Uses pagination to get all results.
+
+    Args:
+        token (str):
+            Auth token. This is the token returned by get_auth_token(). Just the token, do not include "Bearer" in this string.
+        organization_context (str):
+            Organization context. This is provided by the Finite State API management. It looks like "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx".
+        asset_version_id (str, optional):
+            Asset Version ID to get software components for.
+
+    Raises:
+        Exception: Raised if the query fails, required parameters are not specified, or parameters are incompatible.
+
+    Returns:
+        list: List of Software Component Objects
+    """
+    if not asset_version_id:
+        raise Exception("Asset Version ID is required")
+
+    return get_all_paginated_results(token, organization_context, queries.GET_SOFTWARE_COMPONENTS['query'], queries.GET_SOFTWARE_COMPONENTS['variables'](asset_version_id=asset_version_id, type=type), 'allSoftwareComponentInstances')
+
+
+def search_sbom(token, organization_context, name=None, version=None, asset_version_id=None, search_method='EXACT', case_sensitive=False):
+    """
+    Searches the SBOM of a specific asset version or the entire organization for matching software components.
+    Search Methods: EXACT or CONTAINS
+    An exact match will return only the software component whose name matches the name exactly.
+    A contains match will return all software components whose name contains the search string.
+
+    Args:
+        token (str):
+            Auth token. This is the token returned by get_auth_token(). Just the token, do not include "Bearer" in this string, that is handled inside the method.
+        organization_context (str):
+            Organization context. This is provided by the Finite State API management. It looks like "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx".
+        name (str, required):
+            Name of the software component to search for.
+        version (str, optional):
+            Version of the software component to search for. If not specified, will search for all versions of the software component.
+        asset_version_id (str, optional):
+            Asset Version ID to search for software components in. If not specified, will search the entire organization.
+        search_method (str, optional):
+            Search method to use. Valid values are "EXACT" and "CONTAINS". Defaults to "EXACT".
+        case_sensitive (bool, optional):
+            Whether or not to perform a case sensitive search. Defaults to False.
+
+    Raises:
+        ValueError: Raised if name is not provided.
+        Exception: Raised if the query fails.
+
+    Returns:
+        list: List of SoftwareComponentInstance Objects
+    """
+    if asset_version_id:
+        query = '''
+query GetSoftwareComponentInstances(
+    $filter: SoftwareComponentInstanceFilter
+    $after: String
+    $first: Int
+) {
+    allSoftwareComponentInstances(
+        filter: $filter
+        after: $after
+        first: $first
+    ) {
+        _cursor
+        id
+        name
+        version
+        originalComponents {
+            id
+            name
+            version
+        }
+    }
+}
+'''
+    else:
+        # gets the asset version info that contains the software component
+        query = '''
+query GetSoftwareComponentInstances(
+    $filter: SoftwareComponentInstanceFilter
+    $after: String
+    $first: Int
+) {
+    allSoftwareComponentInstances(
+        filter: $filter
+        after: $after
+        first: $first
+    ) {
+        _cursor
+        id
+        name
+        version
+        assetVersion {
+            id
+            name
+            asset {
+                id
+                name
+            }
+        }
+    }
+}
+'''
+
+    variables = {
+        "filter": {
+            "mergedComponentRefId": None
+        },
+        "after": None,
+        "first": 100
+    }
+
+    if asset_version_id:
+        variables["filter"]["assetVersionRefId"] = asset_version_id
+
+    if search_method == 'EXACT':
+        if case_sensitive:
+            variables["filter"]["name"] = name
+        else:
+            variables["filter"]["name_like"] = name
+    elif search_method == 'CONTAINS':
+        variables["filter"]["name_contains"] = name
+
+    if version:
+        if search_method == 'EXACT':
+            variables["filter"]["version"] = version
+        elif search_method == 'CONTAINS':
+            variables["filter"]["version_contains"] = version
+
+    records = get_all_paginated_results(token, organization_context, query, variables=variables, field="allSoftwareComponentInstances")
+
+    return records
+
+
 def send_graphql_query(token, organization_context, query, variables=None):
     """
     Send a GraphQL query to the API
