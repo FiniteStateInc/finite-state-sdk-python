@@ -1053,7 +1053,7 @@ def get_auth_token(client_id, client_secret, token_url=TOKEN_URL, audience=AUDIE
     return auth_token
 
 
-def get_findings(token, organization_context, asset_version_id=None):
+def get_findings(token, organization_context, asset_version_id=None, category=None):
     """
     Gets all the Findings for an Asset Version. Uses pagination to get all results.
     Args:
@@ -1063,6 +1063,8 @@ def get_findings(token, organization_context, asset_version_id=None):
             Organization context. This is provided by the Finite State API management. It looks like "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx".
         asset_version_id (str, optional):
             Asset Version ID to get findings for. If not provided, will get all findings in the organization.
+        category (str, optional):
+            The category of Findings to return. Valid values are "CONFIG_ISSUES", "CREDENTIALS", "CRYPTO_MATERIAL", "CVE", "SAST_ANALYSIS". If not specified, will return all findings. See https://docs.finitestate.io/types/finding-category
     Raises:
         Exception: Raised if the query fails, required parameters are not specified, or parameters are incompatible.
     Returns:
@@ -1071,7 +1073,7 @@ def get_findings(token, organization_context, asset_version_id=None):
     if not asset_version_id:
         raise Exception("Asset Version ID is required")
 
-    return get_all_paginated_results(token, organization_context, queries.GET_FINDINGS['query'], queries.GET_FINDINGS['variables'](asset_version_id=asset_version_id), 'allFindings')
+    return get_all_paginated_results(token, organization_context, queries.GET_FINDINGS['query'], queries.GET_FINDINGS['variables'](asset_version_id=asset_version_id, category=category), 'allFindings')
 
 
 def get_product_asset_versions(token, organization_context, product_id=None):
@@ -1127,6 +1129,8 @@ def get_software_components(token, organization_context, asset_version_id=None, 
             Organization context. This is provided by the Finite State API management. It looks like "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx".
         asset_version_id (str, optional):
             Asset Version ID to get software components for.
+        type (str, optional):
+            The type of software component to return. Valid values are "APPLICATION", "ARCHIVE", "CONTAINER", "DEVICE", "FILE", "FIRMWARE", "FRAMEWORK", "INSTALL", "LIBRARY", "OPERATING_SYSTEM", "OTHER", "SERVICE", "SOURCE". If not specified, will return all software components. See https://docs.finitestate.io/types/software-component-type
     Raises:
         Exception: Raised if the query fails, required parameters are not specified, or parameters are incompatible.
     Returns:
