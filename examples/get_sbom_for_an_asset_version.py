@@ -45,3 +45,79 @@ software_components = finite_state_sdk.get_software_components(token, ORGANIZATI
 
 print(f'Getting software components of type "LIBRARY" for asset version id 123456789')
 software_components = finite_state_sdk.get_software_components(token, ORGANIZATION_CONTEXT, asset_version_id='123456789', type='LIBRARY')
+
+"""
+Example response for a single software component:
+{
+  "_cursor": "{\"id\":\"123456789\"}",
+  "id": "123456789",
+  "name": "Linux Kernel",
+  "type": "OPERATING_SYSTEM",
+  "version": "3.10.14",
+  "hashes": [],
+  "licenses": [
+    {
+      "id": "123456789",
+      "name": "0BSD",
+      "copyLeft": null,
+      "isFsfLibre": null,
+      "isOsiApproved": true,
+      "url": null,
+      "__typename": "License"
+    },
+    {
+      "id": "123456789",
+      "name": "GPL-1.0-only",
+      "copyLeft": "STRONG",
+      "isFsfLibre": null,
+      "isOsiApproved": false,
+      "url": null,
+      "__typename": "License"
+    }
+  ],
+  "softwareIdentifiers": {
+    "cpes": [
+      "cpe:2.3:o:linux:linux_kernel:3.10.14:*:*:*:*:*:*:*"
+    ],
+    "purl": "pkg:generic/linux%2Bkernel@3.10.14",
+    "__typename": "SoftwareIdentifiers"
+  },
+  "absoluteRiskScore": 2085.600000000005,
+  "softwareComponent": {
+    "id": "123456789",
+    "name": "Linux Kernel",
+    "version": "3.10.14",
+    "type": "OPERATING_SYSTEM",
+    "url": null,
+    "licenses": [
+      {
+        "id": "123456789",
+        "name": "GPL-1.0-only",
+        "copyLeft": "STRONG",
+        "isFsfLibre": null,
+        "isOsiApproved": false,
+        "url": null,
+        "__typename": "License"
+      }
+    ],
+    "softwareIdentifiers": {
+      "cpes": [
+        "cpe:2.3:o:linux:linux_kernel:3.10.14:*:*:*:*:*:*:*"
+      ],
+      "purl": "pkg:generic/linux%2Bkernel@3.10.14",
+      "__typename": "SoftwareIdentifiers"
+    },
+    "__typename": "SoftwareComponent"
+  },
+  "currentStatus": {
+    "id": "123456789",
+    "status": "CONFIRMED",
+    "comment": "Confirmed this is present",
+    "createdBy": {
+      "email": "user@company.com"
+    },
+    "__typename": "SoftwareComponentStatus"
+  },
+  "__typename": "SoftwareComponentInstance"
+}
+"""

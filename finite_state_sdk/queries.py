@@ -249,16 +249,44 @@ query GetProductAssetVersions(
 }
 
 
-def _create_GET_FINDINGS_VARIABLES(asset_version_id=None):
+def _create_GET_FINDINGS_VARIABLES(asset_version_id=None, category=None):
+    variables = {
+        "filter": {
+            "assetVersionRefId": asset_version_id,
+            "mergedFindingRefId": None
+        },
+        "after": None,
+        "first": 1000,
+        "orderBy": "title_ASC"
+    }
+
     if asset_version_id is not None:
-        return {
-            "filter": {
-                "assetVersionRefId": asset_version_id,
-                "mergedFindingRefId": None
+        variables["filter"]["assetVersionRefId"] = asset_version_id
+
+    if category is not None:
+        variables["filter"]["AND"] = [
+            {
+                "OR": [
+                    {
+                        "category_in": [
+                            category
+                        ]
+                    }
+                ]
             },
-            "after": None,
-            "first": 1000
-        }
+            {
+                "OR": [
+                    {
+                        "title_like": "%%"
+                    },
+                    {
+                        "description_like": "%%"
+                    }
+                ]
+            }
+        ]
+
+    return variables
 
 
 GET_FINDINGS = {
@@ -275,6 +303,9 @@ query GetFindingsForAnAssetVersion (
         _cursor
         id
         title
+        date
+        createdAt
+        updatedAt
         vulnIdFromTool
         description
         severity
@@ -283,26 +314,85 @@ query GetFindingsForAnAssetVersion (
             name
             version
         }
+        sourceTypes
+        category
+        subcategory
+        regression
+        currentStatus {
+            comment
+            createdAt
+            createdBy {
+                id
+                email
+                __typename
+            }
+            id
+            justification
+            status
+            updatedAt
+            __typename
+        }
+        cwes {
+            id
+            cweId
+            name
+            __typename
+        }
+        cves {
+            id
+            cveId
+            exploitsInfo {
+                exploitProofOfConcept
+                reportedInTheWild
+                weaponized
+                exploitedByNamedThreatActors
+                exploitedByBotnets
+                exploitedByRansomware
+                exploits {
+                    id
+                    __typename
+                }
+                __typename
+            }
+            __typename
+        }
+        origin
+        originalFindingsSources {
+            id
+            name
+            __typename
+        }
+        test {
+            id
+            tools {
+                id
+                name
+                __typename
+            }
+            __typename
+        }
     }
 }""",
-    "variables": lambda asset_version_id=None: _create_GET_FINDINGS_VARIABLES(asset_version_id=asset_version_id)
+    "variables": lambda asset_version_id=None, category=None: _create_GET_FINDINGS_VARIABLES(asset_version_id=asset_version_id, category=category)
 }
 
 
 def _create_GET_SOFTWARE_COMPONENTS_VARIABLES(asset_version_id=None, type=None):
     variables = {
         "filter": {
-            "mergedComponentRefId": None
+            "mergedComponentRefId": None,
+            "deletedAt": None
         },
         "after": None,
-        "first": 100
+        "first": 100,
+        "orderBy": ["absoluteRiskScore_DESC"]
     }
 
     if asset_version_id is not None:
         variables["filter"]["assetVersionRefId"] = asset_version_id
 
     if type is not None:
-        variables["filter"]["type"] = type
+        variables["filter"]["type_in"] = [type]
 
     return variables
 
@@ -321,18 +411,59 @@ query GetSoftwareComponentsForAnAssetVersion (
         _cursor
         id
         name
+        type
         version
         hashes {
             alg
             content
         }
         licenses {
+            id
             name
             copyLeft
             isFsfLibre
             isOsiApproved
+            url
+            __typename
         }
-        type
+        softwareIdentifiers {
+            cpes
+            purl
+            __typename
+        }
+        absoluteRiskScore
+        softwareComponent {
+            id
+            name
+            version
+            type
+            url
+            licenses {
+                id
+                name
+                copyLeft
+                isFsfLibre
+                isOsiApproved
+                url
+                __typename
+            }
+            softwareIdentifiers {
+                cpes
+                purl
+                __typename
+            }
+            __typename
+        }
+        currentStatus {
+            id
+            status
+            comment
+            createdBy {
+                email
+            }
+            __typename
+        }
+        __typename
     }
 }
 """,
