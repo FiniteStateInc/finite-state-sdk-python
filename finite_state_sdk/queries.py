@@ -15,6 +15,7 @@ ALL_BUSINESS_UNITS = {
             _cursor
             id
             name
+            __typename
         }
     }
     """,
@@ -37,6 +38,7 @@ ALL_USERS = {
             _cursor
             id
             email
+            __typename
         }
     }
     """,
@@ -59,6 +61,7 @@ ALL_ORGANIZATIONS = {
             _cursor
             id
             name
+            __typename
         }
     }
     """,
@@ -81,10 +84,13 @@ ALL_ASSET_VERSIONS = {
             _cursor
             id
             name
+            testStatuses
+            relativeRiskScore
             asset {
                 id
                 name
             }
+            __typename
         }
     }
     """,
@@ -129,11 +135,24 @@ ALL_ASSETS = {
                     id
                     name
                     createdAt
+                    createdBy {
+                        id
+                        email
+                        __typename
+                    }
                     ctx {
                         asset
                         businessUnits
                         products
                     }
+                    versions {
+                        id
+                        name
+                        relativeRiskScore
+                        testStatuses
+                        __typename
+                    }
+                    __typename
                 }
             }
         """,
@@ -180,6 +199,7 @@ ALL_ARTIFACTS = {
                         businessUnits
                         products
                     }
+                    __typename
                 }
             }
         """,
@@ -202,6 +222,7 @@ ALL_PRODUCTS = {
                     id
                     name
                     createdAt
+                    __typename
                 }
             }
         """,
@@ -237,6 +258,7 @@ query GetProductAssetVersions(
                 name
             }
         }
+        __typename
     }
 }""",
     "variables": lambda product_id: {
@@ -371,6 +393,7 @@ query GetFindingsForAnAssetVersion (
             }
             __typename
         }
+        __typename
     }
 }""",
     "variables": lambda asset_version_id=None, category=None: _create_GET_FINDINGS_VARIABLES(asset_version_id=asset_version_id, category=category)
@@ -487,6 +510,12 @@ GET_PRODUCTS_BUSINESS_UNIT = {
                     id
                     name
                     createdAt
+                    createdBy {
+                        id
+                        email
+                        __typename
+                    }
+                    __typename
                 }
             }
         """,
