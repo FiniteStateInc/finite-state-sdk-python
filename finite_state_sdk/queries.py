@@ -140,6 +140,10 @@ ALL_ASSETS = {
                         email
                         __typename
                     }
+                    group {
+                        id
+                        name
+                    }
                     ctx {
                         asset
                         businessUnits

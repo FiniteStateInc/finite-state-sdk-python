@@ -297,7 +297,7 @@ def create_new_asset_version_artifact_and_test_for_upload(token, organization_co
     # if business_unit_id or created_by_user_id are not provided, get the existing asset
     if not business_unit_id or not created_by_user_id:
         if not business_unit_id:
-            business_unit_id = asset['businessUnit']['id']
+            business_unit_id = asset['group']['id']
         if not created_by_user_id:
             created_by_user_id = asset['createdByUser']['id']
 
