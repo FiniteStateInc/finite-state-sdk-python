@@ -299,7 +299,7 @@ def create_new_asset_version_artifact_and_test_for_upload(token, organization_co
         if not business_unit_id:
             business_unit_id = asset['group']['id']
         if not created_by_user_id:
-            created_by_user_id = asset['createdByUser']['id']
+            created_by_user_id = asset['createdBy']['id']
 
         if not business_unit_id:
             raise ValueError("Business Unit ID is required and could not be retrieved from the existing asset")
