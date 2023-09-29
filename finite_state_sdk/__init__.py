@@ -257,7 +257,7 @@ def create_new_asset_version_artifact_and_test_for_upload(token, organization_co
         business_unit_id (str, optional):
             Business Unit ID to create the asset version for. If not provided, the default Business Unit will be used.
         created_by_user_id (str, optional):
-            User ID to create the asset version for. If not provided, the default user will be used.
+            User ID that will be the creator of the asset version. If not specified, the creator of the related Asset will be used.
         asset_id (str, required):
             Asset ID to create the asset version for. If not provided, the default asset will be used.
         version (str, required):
@@ -276,6 +276,11 @@ def create_new_asset_version_artifact_and_test_for_upload(token, organization_co
     Returns:
         str: The Test ID of the newly created test that is used for uploading the file.
     """
+    if not asset_id:
+        raise ValueError("Asset ID is required")
+    if not version:
+        raise ValueError("Version is required")
+
     assets = get_all_assets(token, organization_context, asset_id=asset_id)
     asset = assets[0]
 
@@ -292,19 +297,14 @@ def create_new_asset_version_artifact_and_test_for_upload(token, organization_co
     # if business_unit_id or created_by_user_id are not provided, get the existing asset
     if not business_unit_id or not created_by_user_id:
         if not business_unit_id:
-            business_unit_id = asset['businessUnit']['id']
+            business_unit_id = asset['group']['id']
         if not created_by_user_id:
-            created_by_user_id = asset['createdByUser']['id']
+            created_by_user_id = asset['createdBy']['id']
 
         if not business_unit_id:
             raise ValueError("Business Unit ID is required and could not be retrieved from the existing asset")
         if not created_by_user_id:
             raise ValueError("Created By User ID is required and could not be retrieved from the existing asset")
-
-    if not asset_id:
-        raise ValueError("Asset ID is required")
-    if not version:
-        raise ValueError("Version is required")
 
     # create the asset version
     response = create_asset_version(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, asset_version_name=version)
@@ -1011,6 +1011,29 @@ def get_artifact_context(token, organization_context, artifact_id):
     artifact = get_all_paginated_results(token, organization_context, queries.ALL_ARTIFACTS['query'], queries.ALL_ARTIFACTS['variables'](artifact_id, None), 'allAssets')
 
     return artifact[0]['ctx']
+
+
+def get_assets(token, organization_context, asset_id=None, business_unit_id=None):
+    """
+    Gets assets in the organization. Uses pagination to get all results.
+
+    Args:
+        token (str):
+            Auth token. This is the token returned by get_auth_token(). Just the token, do not include "Bearer" in this string, that is handled inside the method.
+        organization_context (str):
+            Organization context. This is provided by the Finite State API management. It looks like "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx".
+        asset_id (str, optional):
+            Asset ID to get, by default None. If None specified, will get all Assets. If specified, will get only the Asset with that ID.
+        business_unit_id (str, optional):
+            Business Unit ID to filter by, by default None. If None specified, will get all Assets. If specified, will get only the Assets in the specified Business Unit.
+
+    Raises:
+        Exception: Raised if the query fails.
+
+    Returns:
+        list: List of Asset Objects
+    """
+    return get_all_paginated_results(token, organization_context, queries.ALL_ASSETS['query'], queries.ALL_ASSETS['variables'](asset_id, business_unit_id), 'allAssets')
 
 
 def get_auth_token(client_id, client_secret, token_url=TOKEN_URL, audience=AUDIENCE):
