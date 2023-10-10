@@ -4,7 +4,7 @@ import finite_state_sdk.queries as queries
 
 API_URL = 'https://platform.finitestate.io/api/v1/graphql'
 AUDIENCE = "https://platform.finitestate.io/api/v1/graphql"
-TOKEN_URL = "https://finitestate.auth0.com/oauth/token"
+TOKEN_URL = "https://platform.finitestate.io/api/v1/auth/token"
 
 
 def create_artifact(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_version_id=None, artifact_name=None, product_id=None):
@@ -1034,6 +1034,31 @@ def get_assets(token, organization_context, asset_id=None, business_unit_id=None
         list: List of Asset Objects
     """
     return get_all_paginated_results(token, organization_context, queries.ALL_ASSETS['query'], queries.ALL_ASSETS['variables'](asset_id, business_unit_id), 'allAssets')
+
+
+def get_asset_versions(token, organization_context, asset_version_id=None, asset_id=None, business_unit_id=None):
+    """
+    Gets asset versions in the organization. Uses pagination to get all results.
+
+    Args:
+        token (str):
+            Auth token. This is the token returned by get_auth_token(). Just the token, do not include "Bearer" in this string, that is handled inside the method.
+        organization_context (str):
+            Organization context. This is provided by the Finite State API management. It looks like "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx".
+        asset_version_id (str, optional):
+            Asset Version ID to get, by default None. If None specified, will get all Asset Versions. If specified, will get only the Asset Version with that ID.
+        asset_id (str, optional):
+            Asset ID to filter by, by default None. If None specified, will get all Asset Versions. If specified, will get only the Asset Versions for the specified Asset.
+        business_unit_id (str, optional):
+            Business Unit ID to filter by, by default None. If None specified, will get all Asset Versions. If specified, will get only the Asset Versions in the specified Business Unit.
+
+    Raises:
+        Exception: Raised if the query fails.
+
+    Returns:
+        list: List of AssetVersion Objects
+    """
+    return get_all_paginated_results(token, organization_context, queries.ALL_ASSET_VERSIONS['query'], queries.ALL_ASSET_VERSIONS['variables'](asset_version_id=asset_version_id, asset_id=asset_id, business_unit_id=business_unit_id), 'allAssetVersions')
 
 
 def get_auth_token(client_id, client_secret, token_url=TOKEN_URL, audience=AUDIENCE):

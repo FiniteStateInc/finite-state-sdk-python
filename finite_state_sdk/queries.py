@@ -71,33 +71,72 @@ ALL_ORGANIZATIONS = {
     }
 }
 
+
+def _create_GET_ASSET_VERSION_VARIABLES(asset_version_id=None, asset_id=None, business_unit_id=None):
+    variables = {
+        "filter": {},
+        "after": None,
+        "first": 1000
+    }
+
+    if asset_version_id is not None:
+        variables["filter"]["id"] = asset_version_id
+
+    if asset_id is not None:
+        variables["filter"]["asset"] = {
+            "id": asset_id
+        }
+
+    if business_unit_id is not None:
+        variables["filter"]["group"] = {
+            "id": business_unit_id
+        }
+
+    return variables
+
+
 ALL_ASSET_VERSIONS = {
     "query": """
     query GetAllAssetVersions(
+        $filter: AssetVersionFilter!,
         $after: String,
         $first: Int
     ) {
         allAssetVersions(
+            filter: $filter,
             after: $after,
             first: $first
         ) {
             _cursor
             id
+            createdAt
+            createdBy {
+                id
+                email
+                __typename
+            }
             name
-            testStatuses
             relativeRiskScore
+            uniqueTestTypes {
+                id
+                name
+                __typename
+            }
+            testStatuses
             asset {
                 id
                 name
+                group {
+                    id
+                    name
+                    __typename
+                }
             }
             __typename
         }
     }
     """,
-    "variables": {
-        "after": None,
-        "first": 100
-    }
+    "variables": lambda asset_version_id=None, asset_id=None, business_unit_id=None: _create_GET_ASSET_VERSION_VARIABLES(asset_version_id=asset_version_id, asset_id=asset_id, business_unit_id=business_unit_id)
 }
 
 
@@ -275,7 +314,7 @@ query GetProductAssetVersions(
 }
 
 
-def _create_GET_FINDINGS_VARIABLES(asset_version_id=None, category=None):
+def _create_GET_FINDINGS_VARIABLES(asset_version_id=None, category=None, cve_id=None):
     variables = {
         "filter": {
             "assetVersionRefId": asset_version_id,
@@ -312,6 +351,19 @@ def _create_GET_FINDINGS_VARIABLES(asset_version_id=None, category=None):
             }
         ]
 
+    if cve_id is not None:
+        variables["filter"]["AND"].append(
+            {
+                "OR": [
+                    {
+                        "cves_every": {
+                            "cveId": cve_id
+                        }
+                    }
+                ]
+            }
+        )
+
     return variables
 
 
@@ -337,8 +389,10 @@ query GetFindingsForAnAssetVersion (
         severity
         riskScore
         affects {
+            id
             name
             version
+            __typename
         }
         sourceTypes
         category
@@ -367,6 +421,10 @@ query GetFindingsForAnAssetVersion (
         cves {
             id
             cveId
+            epss {
+                epssPercentile
+                epssScore
+            }
             exploitsInfo {
                 exploitProofOfConcept
                 reportedInTheWild
@@ -400,7 +458,7 @@ query GetFindingsForAnAssetVersion (
         __typename
     }
 }""",
-    "variables": lambda asset_version_id=None, category=None: _create_GET_FINDINGS_VARIABLES(asset_version_id=asset_version_id, category=category)
+    "variables": lambda asset_version_id=None, category=None, cve_id=None: _create_GET_FINDINGS_VARIABLES(asset_version_id=asset_version_id, category=category, cve_id=cve_id)
 }
 
 
