@@ -276,6 +276,19 @@ ALL_PRODUCTS = {
     }
 }
 
+GENERATE_EXPORT_DOWNLOAD_PRESIGNED_URL = {
+    "query": """
+query GenerateExportDownloadPresignedUrl($exportId: ID!) {
+  generateExportDownloadPresignedUrl(exportId: $exportId) {
+    downloadLink
+    status
+  }
+}
+""",
+    "variables": lambda export_id: { "exportId": export_id }
+}
+
+
 GET_PRODUCT_ASSET_VERSIONS = {
     "query": """
 query GetProductAssetVersions(
@@ -590,6 +603,48 @@ GET_PRODUCTS_BUSINESS_UNIT = {
         "after": None,
         "first": 100
     }
+}
+
+
+def _create_LAUNCH_CYCLONEDX_EXPORT_VARIABLES(cdx_subtype, asset_version_id):
+    variables = {
+        "cdxSubtype": cdx_subtype,
+        "assetVersionId": asset_version_id
+    }
+
+    return variables
+
+
+LAUNCH_CYCLONEDX_EXPORT = {
+    "mutation": """
+mutation LaunchCycloneDxExport($cdxSubtype: CycloneDxExportSubtype!, $assetVersionId: ID!) {
+  launchCycloneDxExport(cdxSubtype: $cdxSubtype, assetVersionId: $assetVersionId) {
+    exportJobId
+  }
+}
+""",
+    "variables": lambda cdx_subtype, asset_version_id: _create_LAUNCH_CYCLONEDX_EXPORT_VARIABLES(cdx_subtype, asset_version_id)
+}
+
+
+def _create_LAUNCH_SPDX_EXPORT_VARIABLES(spdx_subtype, asset_version_id):
+    variables = {
+        "spdxSubtype": spdx_subtype,
+        "assetVersionId": asset_version_id
+    }
+
+    return variables
+
+
+LAUNCH_SPDX_EXPORT = {
+    "mutation": """
+mutation LaunchSpdxExport($spdxSubtype: SpdxExportSubtype!, $assetVersionId: ID!) {
+  launchSpdxExport(spdxSubtype: $spdxSubtype, assetVersionId: $assetVersionId) {
+    exportJobId
+  }
+}
+""",
+    "variables": lambda spdx_subtype, asset_version_id: _create_LAUNCH_SPDX_EXPORT_VARIABLES(spdx_subtype, asset_version_id)
 }
 
 
