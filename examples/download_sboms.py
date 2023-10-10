@@ -2,9 +2,10 @@ import finite_state_sdk
 import requests
 
 
-def download_sbom(token, organization_context, sbom_type="CYCLONEDX", sbom_subtype="SBOM_ONLY", asset_version_id=None, output_filename=None):
+def custom_download_sbom(token, organization_context, sbom_type="CYCLONEDX", sbom_subtype="SBOM_ONLY", asset_version_id=None, output_filename=None):
     """
-    Downloads an SBOM from the Finite State Platform and saves it to the specified output_filename
+    Demonstration of a method for getting a download URL. Downloads an SBOM from the Finite State Platform and saves it to the specified output_filename.
+    You could build your own method to do something else with the URL, or you can use the built-in finite_state_sdk.download_sbom() method.
     :param token: Finite State API token
     :param organization_context: Finite State API organization context
     :param sbom_type: The type of SBOM to download. Valid values are "CYCLONEDX" and "SPDX"
@@ -29,7 +30,10 @@ def download_sbom(token, organization_context, sbom_type="CYCLONEDX", sbom_subty
 
 
 def example_download_sboms(token, organization_context):
-    download_sbom(token, organization_context, sbom_type="CYCLONEDX", sbom_subtype="SBOM_ONLY", asset_version_id='123456789', output_filename='sbom.cyclonedx.sbom_only.json')
-    download_sbom(token, organization_context, sbom_type="CYCLONEDX", sbom_subtype="SBOM_WITH_VDR", asset_version_id='123456789', output_filename='sbom.cyclonedx.sbom_with_vdr.json')
-    download_sbom(token, organization_context, sbom_type="CYCLONEDX", sbom_subtype="VDR_ONLY", asset_version_id='123456789', output_filename='sbom.cyclonedx.vdr_only.json')
-    download_sbom(token, organization_context, sbom_type="SPDX", sbom_subtype="SBOM_ONLY", asset_version_id='123456789', output_filename='sbom.spdx.sbom_only.json')
+    custom_download_sbom(token, organization_context, sbom_type="CYCLONEDX", sbom_subtype="SBOM_ONLY", asset_version_id='123456789', output_filename='sbom.cyclonedx.sbom_only.json')
+    custom_download_sbom(token, organization_context, sbom_type="CYCLONEDX", sbom_subtype="SBOM_WITH_VDR", asset_version_id='123456789', output_filename='sbom.cyclonedx.sbom_with_vdr.json')
+    custom_download_sbom(token, organization_context, sbom_type="CYCLONEDX", sbom_subtype="VDR_ONLY", asset_version_id='123456789', output_filename='sbom.cyclonedx.vdr_only.json')
+    custom_download_sbom(token, organization_context, sbom_type="SPDX", sbom_subtype="SBOM_ONLY", asset_version_id='123456789', output_filename='sbom.spdx.sbom_only.json')
+
+    finite_state_sdk.download_sbom(token, organization_context, sbom_type="CYCLONEDX", sbom_subtype="SBOM_ONLY", asset_version_id='123456789', output_filename='sbom.cyclonedx.sbom_only.json', verbose=True)
+

@@ -747,6 +747,51 @@ def create_test_as_third_party_scanner(token, organization_context, business_uni
     return create_test(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, artifact_id=artifact_id, test_name=test_name, product_id=product_id, test_type=test_type)
 
 
+def download_sbom(token, organization_context, sbom_type="CYCLONEDX", sbom_subtype="SBOM_ONLY", asset_version_id=None, output_filename="sbom.json", verbose=False):
+    """
+    Download an SBOM for an Asset Version and save it to a local file. This is a blocking call, and can sometimes take minutes to return if the SBOM is very large.
+
+    Args:
+        token (str):
+            Auth token. This is the token returned by get_auth_token(). Just the token, do not include "Bearer" in this string, that is handled inside the method.
+        organization_context (str):
+            Organization context. This is provided by the Finite State API management. It looks like "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx".
+        sbom_type (str, required):
+            The type of SBOM to download. Valid values are "CYCLONEDX" and "SPDX". Defaults to "CYCLONEDX".
+        sbom_subtype (str, required):
+            The subtype of SBOM to download. Valid values for CycloneDX are "SBOM_ONLY", "SBOM_WITH_VDR", "VDR_ONLY. For SPDX valid values are "SBOM_ONLY". Defaults to "SBOM_ONLY".
+        asset_version_id (str, required):
+            The Asset Version ID to download the SBOM for.
+        output_filename (str, required):
+            The local filename to save the SBOM to. If not provided, the SBOM will be saved to a file named "sbom.json" in the current directory.
+        verbose (bool, optional):
+            If True, will print additional information to the console. Defaults to False.
+
+    Raises:
+        ValueError: Raised if required parameters are not provided.
+        Exception: Raised if the query fails.
+
+    Returns:
+        None
+    """
+    url = generate_sbom_download_url(token, organization_context, sbom_type=sbom_type, sbom_subtype=sbom_subtype, asset_version_id=asset_version_id, verbose=verbose)
+
+    # Send an HTTP GET request to the URL
+    response = requests.get(url)
+
+    # Check if the request was successful (status code 200)
+    if response.status_code == 200:
+        # Open a local file in binary write mode and write the content to it
+        if verbose:
+            print("File downloaded successfully.")
+        with open(output_filename, 'wb') as file:
+            file.write(response.content)
+            if verbose:
+                print(f'Wrote file to {output_filename}')
+    else:
+        raise Exception(f"Failed to download the file. Status code: {response.status_code}")
+
+
 def file_chunks(file_path, chunk_size=1024 * 1024 * 1024 * 5):
     """
     Helper method to read a file in chunks.
