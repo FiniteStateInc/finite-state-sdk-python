@@ -1289,7 +1289,7 @@ def generate_sbom_download_url(token, organization_context, sbom_type=None, sbom
     if verbose:
         print('Polling every 5 seconds for export job to complete')
     total_time = 0
-    sleep_time = 5
+    sleep_time = 10
     while True:
         time.sleep(sleep_time)
         total_time += sleep_time
@@ -1478,7 +1478,12 @@ def send_graphql_query(token, organization_context, query, variables=None):
     response = requests.post(API_URL, headers=headers, json=data)
 
     if response.status_code == 200:
-        return response.json()
+        thejson = response.json()
+
+        if "errors" in thejson:
+            raise Exception(f"Error: {thejson['errors']}")
+
+        return thejson
     else:
         raise Exception(f"Error: {response.status_code} - {response.text}")
 
