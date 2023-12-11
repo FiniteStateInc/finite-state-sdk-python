@@ -1241,7 +1241,7 @@ def get_auth_token(client_id, client_secret, token_url=TOKEN_URL, audience=AUDIE
     return auth_token
 
 
-def get_findings(token, organization_context, asset_version_id=None, category=None, status=None, count=False):
+def get_findings(token, organization_context, asset_version_id=None, category=None, status=None, severity=None, count=False):
     """
     Gets all the Findings for an Asset Version. Uses pagination to get all results.
     Args:
@@ -1253,6 +1253,12 @@ def get_findings(token, organization_context, asset_version_id=None, category=No
             Asset Version ID to get findings for. If not provided, will get all findings in the organization.
         category (str, optional):
             The category of Findings to return. Valid values are "CONFIG_ISSUES", "CREDENTIALS", "CRYPTO_MATERIAL", "CVE", "SAST_ANALYSIS". If not specified, will return all findings. See https://docs.finitestate.io/types/finding-category
+        status (str, optional):
+            The status of Findings to return.
+        severity (str, optional):
+            The severity of Findings to return. Valid values are "CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO", and "UNKNOWN". If not specified, will return all findings.
+        count (bool, optional):
+            If True, will return the count of findings instead of the findings themselves. Defaults to False.
     Raises:
         Exception: Raised if the query fails, required parameters are not specified, or parameters are incompatible.
     Returns:
@@ -1260,9 +1266,9 @@ def get_findings(token, organization_context, asset_version_id=None, category=No
     """
 
     if count:
-        return send_graphql_query(token, organization_context, queries.GET_FINDINGS_COUNT['query'], queries.GET_FINDINGS_COUNT['variables'](asset_version_id=asset_version_id, category=category, status=status))["data"]["_allFindingsMeta"]
+        return send_graphql_query(token, organization_context, queries.GET_FINDINGS_COUNT['query'], queries.GET_FINDINGS_COUNT['variables'](asset_version_id=asset_version_id, category=category, status=status, severity=severity))["data"]["_allFindingsMeta"]
     else:
-        return get_all_paginated_results(token, organization_context, queries.GET_FINDINGS['query'], queries.GET_FINDINGS['variables'](asset_version_id=asset_version_id, category=category, status=status), 'allFindings')
+        return get_all_paginated_results(token, organization_context, queries.GET_FINDINGS['query'], queries.GET_FINDINGS['variables'](asset_version_id=asset_version_id, category=category, status=status, severity=severity), 'allFindings')
 
 
 def get_product_asset_versions(token, organization_context, product_id=None):
