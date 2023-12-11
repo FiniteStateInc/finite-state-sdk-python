@@ -190,6 +190,11 @@ ALL_ASSETS = {
                         businessUnits
                         products
                     }
+                    defaultVersion {
+                        id
+                        name
+                        relativeRiskScore
+                    }
                     versions {
                         id
                         name
@@ -209,7 +214,8 @@ def artifact_variables(artifact_id=None, business_unit_id=None):
     variables = {
         "filter": {},
         "after": None,
-        "first": 100
+        "first": 100,
+        "orderBy": ["name_ASC"]
     }
 
     if artifact_id is not None:
@@ -228,12 +234,14 @@ ALL_ARTIFACTS = {
         query GetAllArtifacts(
             $filter: AssetFilter!,
             $after: String,
-            $first: Int
+            $first: Int,
+            $orderBy: [AssetOrderBy!]
             ) {
                 allAssets(
                     filter: $filter,
                     after: $after,
-                    first: $first
+                    first: $first,
+                    orderBy: $orderBy
                 ) {
                     _cursor
                     id
@@ -267,6 +275,24 @@ ALL_PRODUCTS = {
                     id
                     name
                     createdAt
+                    createdBy {
+                        id
+                        email
+                        __typename
+                    }
+                    relativeRiskScore
+                    group {
+                        id
+                        name
+                    }
+                    assets {
+                        id
+                        name
+                        _findingsMeta {
+                            count
+                        }
+                        __typename
+                    }
                     __typename
                 }
             }
@@ -329,7 +355,7 @@ query GetProductAssetVersions(
 }
 
 
-def _create_GET_FINDINGS_VARIABLES(asset_version_id=None, category=None, cve_id=None, status=None, limit=1000, count=False):
+def _create_GET_FINDINGS_VARIABLES(asset_version_id=None, category=None, cve_id=None, status=None, severity=None, limit=1000, count=False):
     variables = {
         "filter": {
             "mergedFindingRefId": None,
@@ -344,7 +370,11 @@ def _create_GET_FINDINGS_VARIABLES(asset_version_id=None, category=None, cve_id=
         variables["orderBy"] = ["title_ASC"]
 
     if asset_version_id is not None:
-        variables["filter"]["assetVersionRefId"] = str(asset_version_id)
+        # if asset_version_id is a list, use the "in" operator
+        if isinstance(asset_version_id, list):
+            variables["filter"]["assetVersionRefId_in"] = asset_version_id
+        else:
+            variables["filter"]["assetVersionRefId"] = str(asset_version_id)
 
     if category is not None:
         variables["filter"]["AND"] = [
@@ -368,6 +398,9 @@ def _create_GET_FINDINGS_VARIABLES(asset_version_id=None, category=None, cve_id=
                 ]
             }
         ]
+
+    if severity is not None:
+        variables["filter"]["severity"] = severity
 
     if cve_id is not None:
         if "AND" not in variables["filter"]:
@@ -404,7 +437,7 @@ query GetFindingsCount($filter: FindingFilter)
     }
 }
 """,
-    "variables": lambda asset_version_id=None, category=None, cve_id=None, status=None, limit=None: _create_GET_FINDINGS_VARIABLES(asset_version_id=asset_version_id, category=category, cve_id=cve_id, status=status, limit=limit, count=True)
+    "variables": lambda asset_version_id=None, category=None, cve_id=None, status=None, severity=None, limit=None: _create_GET_FINDINGS_VARIABLES(asset_version_id=asset_version_id, category=category, cve_id=cve_id, status=status, severity=severity, limit=limit, count=True)
 }
 
 GET_FINDINGS = {
@@ -517,7 +550,7 @@ query GetFindingsForAnAssetVersion (
         __typename
     }
 }""",
-    "variables": lambda asset_version_id=None, category=None, cve_id=None, status=None, limit=None: _create_GET_FINDINGS_VARIABLES(asset_version_id=asset_version_id, category=category, cve_id=cve_id, status=status, limit=limit)
+    "variables": lambda asset_version_id=None, category=None, cve_id=None, status=None, severity=None, limit=None: _create_GET_FINDINGS_VARIABLES(asset_version_id=asset_version_id, category=category, cve_id=cve_id, severity=severity, status=status, limit=limit)
 }
 
 
