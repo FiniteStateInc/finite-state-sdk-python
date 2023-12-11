@@ -14,18 +14,24 @@ token = token_cache.get_token(CLIENT_ID, CLIENT_SECRET)
 
 
 class TokenCache():
-    def __init__(self, organization_context):
+    def __init__(self, organization_context, client_id=None):
         self.token = None
+
+        self.client_id = client_id
         self.organization_context = organization_context
-        self.token_file = f'.tokencache/{self.organization_context}/token.txt'
+        if self.client_id:
+            self.token_path = f'.tokencache/{self.organization_context}-{self.client_id}'
+        else:
+            self.token_file = f'.tokencache/{self.organization_context}/token.txt'
+        self.token_file = f'{self.token_path}/token.txt'
 
         # create the token cache directory if it doesn't exist
         if not os.path.exists('.tokencache'):
             os.mkdir('.tokencache')
 
         # create the client directory if it doesn't exist
-        if not os.path.exists(f'.tokencache/{self.organization_context}'):
-            os.mkdir(f'.tokencache/{self.organization_context}')
+        if not os.path.exists(self.token_path):
+            os.mkdir(self.token_path)
 
     def _get_token_from_api(self, client_id, client_secret):
         # get a new token
@@ -53,6 +59,7 @@ class TokenCache():
 
                     return self.token
             else:
+                print("Querying the API for a new token...")
                 self._get_token_from_api(client_id, client_secret)
                 return self.token
 
