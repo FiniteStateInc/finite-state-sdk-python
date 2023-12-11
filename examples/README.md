@@ -15,9 +15,17 @@ How to create a new Product programatically.
 
 If you want to run custom GraphQL queries using all the available fields in the API.
 
+# download_reports.py
+
+Shows how to download PDF and CSV reports for an asset version.
+
 # download_sboms.py
 
 For programmatically downloading SBOMs for an asset version.
+
+# generate_products_csv.py
+
+Creates a CSV report of high level information about products.
 
 # get_findings.py
 
@@ -26,7 +34,6 @@ Getting all the Findings for an asset version, with filters by type, such as "CV
 # get_product_and_asset_information.py
 
 Querying for all the product and asset version using the SDK.
-
 
 # get sbom_for_an_asset_version.py
 
