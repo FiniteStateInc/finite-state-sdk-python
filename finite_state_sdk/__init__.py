@@ -333,7 +333,7 @@ def create_new_asset_version_artifact_and_test_for_upload(token, organization_co
         test_id = response['createTest']['id']
         return test_id
 
-    elif test_type == "cyclonedx":
+    else:
         # create the artifact
         if not artifact_description:
             artifact_description = "Unspecified Artifact"
@@ -348,9 +348,6 @@ def create_new_asset_version_artifact_and_test_for_upload(token, organization_co
         response = create_test_as_third_party_scanner(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, artifact_id=binary_artifact_id, product_id=asset_product_ids, test_name=test_name, test_type=test_type)
         test_id = response['createTest']['id']
         return test_id
-
-    else:
-        raise ValueError(f"Test type {test_type} is not supported")
 
 
 def create_new_asset_version_and_upload_binary(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, version=None, file_path=None, product_id=None, artifact_description=None):
@@ -425,7 +422,7 @@ def create_new_asset_version_and_upload_test_results(token, organization_context
         product_id (str, optional):
             Product ID to create the asset version for. If not provided, the existing Product for the Asset will be used.
         test_type (str, required):
-            Test type. This must be "cyclonedx" or one of the list of supported third party scanner types. For the full list of supported third party scanner types, see the Finite State API documentation.
+            Test type. This must be one of the list of supported third party scanner types. For the full list of supported third party scanner types, see the Finite State API documentation.
         artifact_description (str, optional):
             Description of the artifact being scanned (e.g. "Source Code Repository", "Container Image"). If not provided, the default artifact description will be used.
 
@@ -1732,34 +1729,32 @@ def upload_file_for_binary_analysis(token, organization_context, test_id=None, f
 
     # Start Multi-part Upload
     graphql_query = '''
-    mutation Start($input: startMultipartUploadInput!) {
-        startMultipartUpload(input: $input) {
-            id
+    mutation Start($testId: ID!) {
+        startMultipartUploadV2(testId: $testId) {
+            uploadId
             key
         }
     }
     '''
 
     variables = {
-        "input": {
-            "testId": test_id
-        }
+        "testId": test_id
     }
 
     response = send_graphql_query(token, organization_context, graphql_query, variables)
 
-    upload_id = response['data']['startMultipartUpload']['id']
-    upload_key = response['data']['startMultipartUpload']['key']
+    upload_id = response['data']['startMultipartUploadV2']['uploadId']
+    upload_key = response['data']['startMultipartUploadV2']['key']
 
     # if the file is greater than max chunk size (or 5 GB), split the file in chunks,
-    # call generateUploadPartUrl for each chunk of the file (even if it is a single part)
+    # call generateUploadPartUrlV2 for each chunk of the file (even if it is a single part)
     # and upload the file to the returned upload URL
     i = 1
     part_data = []
     for chunk in file_chunks(file_path, chunk_size):
         graphql_query = '''
-        mutation GenerateUploadPartUrl($input: generateUploadPartUrlInput!) {
-            generateUploadPartUrl(input: $input) {
+        mutation GenerateUploadPartUrl($partNumber: Int!, $uploadId: ID!, $uploadKey: String!) {
+            generateUploadPartUrlV2(partNumber: $partNumber, uploadId: $uploadId, uploadKey: $uploadKey) {
                 key
                 uploadUrl
             }
@@ -1767,16 +1762,14 @@ def upload_file_for_binary_analysis(token, organization_context, test_id=None, f
         '''
 
         variables = {
-            "input": {
-                "partNumber": i,
-                "uploadId": upload_id,
-                "uploadKey": upload_key
-            }
+            "partNumber": i,
+            "uploadId": upload_id,
+            "uploadKey": upload_key
         }
 
         response = send_graphql_query(token, organization_context, graphql_query, variables)
 
-        chunk_upload_url = response['data']['generateUploadPartUrl']['uploadUrl']
+        chunk_upload_url = response['data']['generateUploadPartUrlV2']['uploadUrl']
 
         # upload the chunk to the upload URL
         response = upload_bytes_to_url(chunk_upload_url, chunk)
@@ -1786,22 +1779,38 @@ def upload_file_for_binary_analysis(token, organization_context, test_id=None, f
             "PartNumber": i
         })
 
-    # call completeMultiPartUpload
+    # call completeMultipartUploadV2
     graphql_query = '''
-    mutation CompleteMultipartUpload($input: CompleteMultipartUploadInput!) {
-        completeMultipartUpload(input: $input) {
+    mutation CompleteMultipartUpload($partData: [PartInput!]!, $uploadId: ID!, $uploadKey: String!) {
+        completeMultipartUploadV2(partData: $partData, uploadId: $uploadId, uploadKey: $uploadKey) {
             key
         }
     }
     '''
 
     variables = {
-        "input": {
-            "partData": part_data,
-            "testId": test_id,
-            "uploadId": upload_id,
-            "uploadKey": upload_key
+        "partData": part_data,
+        "uploadId": upload_id,
+        "uploadKey": upload_key
+    }
+
+    response = send_graphql_query(token, organization_context, graphql_query, variables)
+
+    # get key from the result
+    key = response['data']['completeMultipartUploadV2']['key']
+
+    # call launchBinaryUploadProcessing
+    graphql_query = '''
+    mutation LaunchBinaryUploadProcessing($key: String!, $testId: ID!) {
+        launchBinaryUploadProcessing(key: $key, testId: $testId) {
+            key
         }
+    }
+    '''
+
+    variables = {
+        "key": key,
+        "testId": test_id
     }
 
     response = send_graphql_query(token, organization_context, graphql_query, variables)
@@ -1837,8 +1846,8 @@ def upload_test_results_file(token, organization_context, test_id=None, file_pat
 
     # Gerneate Test Result Upload URL
     graphql_query = '''
-    mutation GenerateTestResultUploadUrl($input: generateTestResultUploadUrlInput!) {
-        generateTestResultUploadUrl(input: $input) {
+    mutation GenerateTestResultUploadUrl($testId: ID!) {
+        generateSinglePartUploadUrl(testId: $testId) {
             uploadUrl
             key
         }
@@ -1846,35 +1855,30 @@ def upload_test_results_file(token, organization_context, test_id=None, file_pat
     '''
 
     variables = {
-        "input": {
-            "orgId": organization_context,
-            "testId": test_id
-        }
+        "testId": test_id
     }
 
     response = send_graphql_query(token, organization_context, graphql_query, variables)
 
     # get the upload URL and key
-    upload_url = response['data']['generateTestResultUploadUrl']['uploadUrl']
-    key = response['data']['generateTestResultUploadUrl']['key']
+    upload_url = response['data']['generateSinglePartUploadUrl']['uploadUrl']
+    key = response['data']['generateSinglePartUploadUrl']['key']
 
     # upload the file
     upload_file_to_url(upload_url, file_path)
 
     # complete the upload
     graphql_query = '''
-    mutation CompleteTestResultUpload($input: completeTestResultUploadInput!) {
-        completeTestResultUpload(input: $input) {
+    mutation CompleteTestResultUpload($key: String!, $testId: ID!) {
+        launchTestResultProcessing(key: $key, testId: $testId) {
             key
         }
     }
     '''
 
     variables = {
-        "input": {
-            "testId": test_id,
-            "key": key
-        }
+        "testId": test_id,
+        "key": key
     }
 
     response = send_graphql_query(token, organization_context, graphql_query, variables)
