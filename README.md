@@ -11,7 +11,7 @@ The cloud-based SaaS platform for SBOM and Product Security management enables y
 * Generate and manage SBOMs in any format to create software transparency
 * Orchestrate and correlate scan findings from over 120 top scanning tools
 * Monitor AppSec and Product Security risk across product portfolios to visualize risk scoring and prioritize critical findings
-* Leverage world-class binary SCA to generate the most thorough and accurate SBOMs available with world-class binary SCA
+* Leverage world-class binary SCA to generate the most thorough and accurate SBOMs available
 
 # [Finite State](https://finitestate.io) SDK
 
