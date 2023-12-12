@@ -1,22 +1,48 @@
+import argparse
+import datetime
+import json
+import os
+from dotenv import load_dotenv
 
 import finite_state_sdk
-import json
+from finite_state_sdk.token_cache import TokenCache
 
-TOKEN = 'YOUR_TOKEN'
-ORGANIZATION_CONTEXT = 'YOUR_ORG_CONTEXT'
 
-# Get all CVE findings for a specific asset version
-# For more info see: https://docs.finitestate.io/types/finding-category
-findings = finite_state_sdk.get_findings(TOKEN, ORGANIZATION_CONTEXT, asset_version_id='123456789', category="CVE")
+def main():
+    """
+    Get all Findings for a specific asset version
+    """
+    parser = argparse.ArgumentParser(description='Compare two asset versions')
+    parser.add_argument('--secrets-file', type=str, help='Path to the secrets file', required=True)
+    parser.add_argument('--asset-version', type=str, help='Asset Version ID', required=True)
 
-print(f'Found {len(findings)} findings')
+    args = parser.parse_args()
 
-i = 0
-for finding in findings:
-    print(f'Finding: {json.dumps(finding, indent=2)}')
-    i += 1
-    if i > 10:
-        break
+    load_dotenv(args.secrets_file, override=True)
+
+    # get CLIENT_ID and CLIENT_SECRET from env
+    CLIENT_ID = os.environ.get("CLIENT_ID")
+    CLIENT_SECRET = os.environ.get("CLIENT_SECRET")
+    ORGANIZATION_CONTEXT = os.environ.get("ORGANIZATION_CONTEXT")
+
+    # Get an auth token - this is a bearer token that you will use for all subsequent requests
+    # The token is valid for 24 hours
+    token_cache = TokenCache(ORGANIZATION_CONTEXT)
+    token = token_cache.get_token(CLIENT_ID, CLIENT_SECRET)
+
+    # Get all CVE findings for a specific asset version
+    # For more info see: https://docs.finitestate.io/types/finding-category
+    findings = finite_state_sdk.get_findings(token, ORGANIZATION_CONTEXT, asset_version_id=args.asset_version, category="CRYPTO_MATERIAL")
+
+    print(f'Found {len(findings)} findings')
+
+    for finding in findings:
+        if finding["vulnIdFromTool"] and "FS-" in finding["vulnIdFromTool"]:
+            print(f'Finding: {json.dumps(finding, indent=2)}')
+
+
+if __name__ == "__main__":
+    main()
 
 
 """

@@ -1,3 +1,5 @@
+import json
+
 """
 GraphQL queries for the Finite State Platform
 """
@@ -188,6 +190,11 @@ ALL_ASSETS = {
                         businessUnits
                         products
                     }
+                    defaultVersion {
+                        id
+                        name
+                        relativeRiskScore
+                    }
                     versions {
                         id
                         name
@@ -207,7 +214,8 @@ def artifact_variables(artifact_id=None, business_unit_id=None):
     variables = {
         "filter": {},
         "after": None,
-        "first": 100
+        "first": 100,
+        "orderBy": ["name_ASC"]
     }
 
     if artifact_id is not None:
@@ -226,12 +234,14 @@ ALL_ARTIFACTS = {
         query GetAllArtifacts(
             $filter: AssetFilter!,
             $after: String,
-            $first: Int
+            $first: Int,
+            $orderBy: [AssetOrderBy!]
             ) {
                 allAssets(
                     filter: $filter,
                     after: $after,
-                    first: $first
+                    first: $first,
+                    orderBy: $orderBy
                 ) {
                     _cursor
                     id
@@ -265,6 +275,24 @@ ALL_PRODUCTS = {
                     id
                     name
                     createdAt
+                    createdBy {
+                        id
+                        email
+                        __typename
+                    }
+                    relativeRiskScore
+                    group {
+                        id
+                        name
+                    }
+                    assets {
+                        id
+                        name
+                        _findingsMeta {
+                            count
+                        }
+                        __typename
+                    }
                     __typename
                 }
             }
@@ -327,19 +355,26 @@ query GetProductAssetVersions(
 }
 
 
-def _create_GET_FINDINGS_VARIABLES(asset_version_id=None, category=None, cve_id=None):
+def _create_GET_FINDINGS_VARIABLES(asset_version_id=None, category=None, cve_id=None, status=None, severity=None, limit=1000, count=False):
     variables = {
         "filter": {
-            "assetVersionRefId": asset_version_id,
-            "mergedFindingRefId": None
-        },
-        "after": None,
-        "first": 1000,
-        "orderBy": "title_ASC"
+            "mergedFindingRefId": None,
+            "deletedAt": None
+        }
     }
 
+    # if not counting, set the pagination and ordering
+    if not count:
+        variables["after"] = None
+        variables["first"] = limit
+        variables["orderBy"] = ["title_ASC"]
+
     if asset_version_id is not None:
-        variables["filter"]["assetVersionRefId"] = asset_version_id
+        # if asset_version_id is a list, use the "in" operator
+        if isinstance(asset_version_id, list):
+            variables["filter"]["assetVersionRefId_in"] = asset_version_id
+        else:
+            variables["filter"]["assetVersionRefId"] = str(asset_version_id)
 
     if category is not None:
         variables["filter"]["AND"] = [
@@ -364,7 +399,13 @@ def _create_GET_FINDINGS_VARIABLES(asset_version_id=None, category=None, cve_id=
             }
         ]
 
+    if severity is not None:
+        variables["filter"]["severity"] = severity
+
     if cve_id is not None:
+        if "AND" not in variables["filter"]:
+            variables["filter"]["AND"] = []
+
         variables["filter"]["AND"].append(
             {
                 "OR": [
@@ -377,19 +418,40 @@ def _create_GET_FINDINGS_VARIABLES(asset_version_id=None, category=None, cve_id=
             }
         )
 
+    if status is not None:
+        variables["filter"]["currentStatus"] = {
+            "status_in": [
+                status
+            ]
+        }
+
     return variables
 
+
+GET_FINDINGS_COUNT = {
+    "query": """
+query GetFindingsCount($filter: FindingFilter)
+{
+    _allFindingsMeta(filter: $filter) {
+        count
+    }
+}
+""",
+    "variables": lambda asset_version_id=None, category=None, cve_id=None, status=None, severity=None, limit=None: _create_GET_FINDINGS_VARIABLES(asset_version_id=asset_version_id, category=category, cve_id=cve_id, status=status, severity=severity, limit=limit, count=True)
+}
 
 GET_FINDINGS = {
     "query": """
 query GetFindingsForAnAssetVersion (
     $filter: FindingFilter,
     $after: String,
-    $first: Int
+    $first: Int,
+    $orderBy: [FindingOrderBy!]
 ) {
     allFindings(filter: $filter,
                 after: $after,
-                first: $first
+                first: $first,
+                orderBy: $orderBy
     ) {
         _cursor
         id
@@ -397,6 +459,9 @@ query GetFindingsForAnAssetVersion (
         date
         createdAt
         updatedAt
+        deletedAt
+        cvssScore
+        cvssSeverity
         vulnIdFromTool
         description
         severity
@@ -438,6 +503,12 @@ query GetFindingsForAnAssetVersion (
                 epssPercentile
                 epssScore
             }
+            cvssScore
+            cvssBaseMetricV3 {
+                cvssv3 {
+                    baseScore
+                }
+            }
             exploitsInfo {
                 exploitProofOfConcept
                 reportedInTheWild
@@ -454,6 +525,14 @@ query GetFindingsForAnAssetVersion (
             __typename
         }
         origin
+        originalFindings {
+            id
+            vulnIdFromTool
+            origin
+            cvssScore
+            cvssSeverity
+            __typename
+        }
         originalFindingsSources {
             id
             name
@@ -471,7 +550,7 @@ query GetFindingsForAnAssetVersion (
         __typename
     }
 }""",
-    "variables": lambda asset_version_id=None, category=None, cve_id=None: _create_GET_FINDINGS_VARIABLES(asset_version_id=asset_version_id, category=category, cve_id=cve_id)
+    "variables": lambda asset_version_id=None, category=None, cve_id=None, status=None, severity=None, limit=None: _create_GET_FINDINGS_VARIABLES(asset_version_id=asset_version_id, category=category, cve_id=cve_id, severity=severity, status=status, limit=limit)
 }
 
 
@@ -500,11 +579,13 @@ GET_SOFTWARE_COMPONENTS = {
 query GetSoftwareComponentsForAnAssetVersion (
     $filter: SoftwareComponentInstanceFilter,
     $after: String,
-    $first: Int
+    $first: Int,
+    $orderBy: [SoftwareComponentInstanceOrderBy!]
 ) {
     allSoftwareComponentInstances(filter: $filter,
                                   after: $after,
-                                  first: $first
+                                  first: $first,
+                                  orderBy: $orderBy
     ) {
         _cursor
         id
@@ -515,6 +596,7 @@ query GetSoftwareComponentsForAnAssetVersion (
             alg
             content
         }
+        author
         licenses {
             id
             name
@@ -523,6 +605,11 @@ query GetSoftwareComponentsForAnAssetVersion (
             isOsiApproved
             url
             __typename
+        }
+        copyrights {
+            name
+            text
+            url
         }
         softwareIdentifiers {
             cpes
@@ -552,6 +639,9 @@ query GetSoftwareComponentsForAnAssetVersion (
             }
             __typename
         }
+        supplier {
+            name
+        }
         currentStatus {
             id
             status
@@ -561,6 +651,13 @@ query GetSoftwareComponentsForAnAssetVersion (
             }
             __typename
         }
+        test {
+            name
+            tools {
+                name
+            }
+        }
+        origin
         __typename
     }
 }
@@ -624,6 +721,81 @@ mutation LaunchCycloneDxExport($cdxSubtype: CycloneDxExportSubtype!, $assetVersi
 }
 """,
     "variables": lambda cdx_subtype, asset_version_id: _create_LAUNCH_CYCLONEDX_EXPORT_VARIABLES(cdx_subtype, asset_version_id)
+}
+
+
+def _create_LAUNCH_REPORT_EXPORT_MUTATION(asset_version_id=None, product_id=None, report_type=None, report_subtype=None):
+    if not asset_version_id and not product_id:
+        raise Exception("Must specify either asset_version_id or product_id")
+
+    if asset_version_id and product_id:
+        raise Exception("Cannot specify both asset_version_id and product_id")
+
+    if asset_version_id:
+        if report_type == "CSV":
+            mutation = """
+mutation LaunchArtifactCSVExport($artifactCsvSubtype: ArtifactCSVExportSubtype!, $assetVersionId: ID!) {
+    launchArtifactCSVExport(artifactCsvSubtype: $artifactCsvSubtype, assetVersionId: $assetVersionId) {
+        exportJobId
+    }
+}
+"""
+        elif report_type == "PDF":
+            mutation = """
+mutation LaunchArtifactPDFExport($artifactPdfSubtype: ArtifactPdfExportSubtype!, $assetVersionId: ID!) {
+    launchArtifactPdfExport(artifactPdfSubtype: $artifactPdfSubtype, assetVersionId: $assetVersionId) {
+        exportJobId
+    }
+}
+"""
+
+    if product_id:
+        if report_type == "CSV":
+            mutation = """
+mutation LaunchProductCSVExport($productCsvSubtype: ProductCSVExportSubtype!, $productId: ID!) {
+    launchProductCSVExport(productCsvSubtype: $productCsvSubtype, productId: $productId) {
+        exportJobId
+    }
+}
+"""
+
+    return mutation
+
+
+def _create_LAUNCH_REPORT_EXPORT_VARIABLES(asset_version_id=None, product_id=None, report_type=None, report_subtype=None):
+    variables = {}
+
+    if not asset_version_id and not product_id:
+        raise Exception("Must specify either asset_version_id or product_id")
+
+    if asset_version_id and product_id:
+        raise Exception(f"Cannot specify both asset_version_id and product_id: specified {asset_version_id} and {product_id}")
+
+    if asset_version_id:
+        if report_type == "CSV":
+            variables = {
+                "artifactCsvSubtype": report_subtype,
+                "assetVersionId": asset_version_id
+            }
+        elif report_type == "PDF":
+            variables = {
+                "artifactPdfSubtype": report_subtype,
+                "assetVersionId": asset_version_id
+            }
+
+    if product_id:
+        if report_type == "CSV":
+            variables = {
+                "productCsvSubtype": report_subtype,
+                "productId": product_id
+            }
+
+    return variables
+
+
+LAUNCH_REPORT_EXPORT = {
+    "mutation": lambda asset_version_id, product_id, report_type, report_subtype: _create_LAUNCH_REPORT_EXPORT_MUTATION(asset_version_id=asset_version_id, product_id=product_id, report_type=report_type, report_subtype=report_subtype),
+    "variables": lambda asset_version_id, product_id, report_type, report_subtype: _create_LAUNCH_REPORT_EXPORT_VARIABLES(asset_version_id=asset_version_id, product_id=product_id, report_type=report_type, report_subtype=report_subtype)
 }
 
 

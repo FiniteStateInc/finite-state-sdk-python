@@ -11,6 +11,10 @@ TOKEN_URL = "https://platform.finitestate.io/api/v1/auth/token"
 def create_artifact(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_version_id=None, artifact_name=None, product_id=None):
     """
     Create a new Artifact.
+    This is an advanced method - you are probably looking for create_new_asset_version_and_upload_test_results or create_new_asset_version_and_upload_binary.
+    Please see the examples in the Github repository for more information:
+    - https://github.com/FiniteStateInc/finite-state-sdk-python/blob/main/examples/upload_test_results.py
+    - https://github.com/FiniteStateInc/finite-state-sdk-python/blob/main/examples/uploading_a_binary.py
 
     Args:
         token (str):
@@ -329,7 +333,7 @@ def create_new_asset_version_artifact_and_test_for_upload(token, organization_co
         test_id = response['createTest']['id']
         return test_id
 
-    elif test_type == "cyclonedx":
+    else:
         # create the artifact
         if not artifact_description:
             artifact_description = "Unspecified Artifact"
@@ -344,9 +348,6 @@ def create_new_asset_version_artifact_and_test_for_upload(token, organization_co
         response = create_test_as_third_party_scanner(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, artifact_id=binary_artifact_id, product_id=asset_product_ids, test_name=test_name, test_type=test_type)
         test_id = response['createTest']['id']
         return test_id
-
-    else:
-        raise ValueError(f"Test type {test_type} is not supported")
 
 
 def create_new_asset_version_and_upload_binary(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, version=None, file_path=None, product_id=None, artifact_description=None):
@@ -421,7 +422,7 @@ def create_new_asset_version_and_upload_test_results(token, organization_context
         product_id (str, optional):
             Product ID to create the asset version for. If not provided, the existing Product for the Asset will be used.
         test_type (str, required):
-            Test type. This must be "cyclonedx" or one of the list of supported third party scanner types. For the full list of supported third party scanner types, see the Finite State API documentation.
+            Test type. This must be one of the list of supported third party scanner types. For the full list of supported third party scanner types, see the Finite State API documentation.
         artifact_description (str, optional):
             Description of the artifact being scanned (e.g. "Source Code Repository", "Container Image"). If not provided, the default artifact description will be used.
 
@@ -544,6 +545,10 @@ def create_product(token, organization_context, business_unit_id=None, created_b
 def create_test(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, artifact_id=None, test_name=None, product_id=None, test_type=None, tools=[]):
     """
     Create a new Test object for uploading files.
+    This is an advanced method - you are probably looking for create_new_asset_version_and_upload_test_results or create_new_asset_version_and_upload_binary.
+    Please see the examples in the Github repository for more information:
+    - https://github.com/FiniteStateInc/finite-state-sdk-python/blob/main/examples/upload_test_results.py
+    - https://github.com/FiniteStateInc/finite-state-sdk-python/blob/main/examples/uploading_a_binary.py
 
     Args:
         token (str):
@@ -745,6 +750,92 @@ def create_test_as_third_party_scanner(token, organization_context, business_uni
         dict: createTest Object
     """
     return create_test(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, artifact_id=artifact_id, test_name=test_name, product_id=product_id, test_type=test_type)
+
+
+def download_asset_version_report(token, organization_context, asset_version_id=None, report_type=None, report_subtype=None, output_filename=None, verbose=False):
+    """
+    Download a report for a specific asset version and save it to a local file. This is a blocking call, and can sometimes take minutes to return if the report is very large.
+
+    Args:
+        token (str):
+            Auth token. This is the token returned by get_auth_token(). Just the token, do not include "Bearer" in this string, that is handled inside the method.
+        organization_context (str):
+            Organization context. This is provided by the Finite State API management. It looks like "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx".
+        asset_version_id (str, required):
+            The Asset Version ID to download the report for.
+        report_type (str, required):
+            The file type of the report to download. Valid values are "CSV" and "PDF".
+        report_subtype (str, required):
+            The type of report to download. Based on available reports for the `report_type` specified
+            Valid values for CSV are "ALL_FINDINGS", "ALL_COMPONENTS", "EXPLOIT_INTELLIGENCE".
+            Valid values for PDF are "RISK_SUMMARY".
+        output_filename (str, optional):
+            The local filename to save the report to. If not provided, the report will be saved to a file named "report.csv" or "report.pdf" in the current directory based on the report type.
+        verbose (bool, optional):
+            If True, will print additional information to the console. Defaults to False.
+
+    Raises:
+        ValueError: Raised if required parameters are not provided.
+        Exception: Raised if the query fails.
+
+    Returns:
+        None
+    """
+    url = generate_report_download_url(token, organization_context, asset_version_id=asset_version_id, report_type=report_type, report_subtype=report_subtype, verbose=verbose)
+
+    # Send an HTTP GET request to the URL
+    response = requests.get(url)
+
+    # Check if the request was successful (status code 200)
+    if response.status_code == 200:
+        # Open a local file in binary write mode and write the content to it
+        if verbose:
+            print("File downloaded successfully.")
+        with open(output_filename, 'wb') as file:
+            file.write(response.content)
+            if verbose:
+                print(f'Wrote file to {output_filename}')
+    else:
+        raise Exception(f"Failed to download the file. Status code: {response.status_code}")
+
+
+def download_product_report(token, organization_context, product_id=None, report_type=None, report_subtype=None, output_filename=None, verbose=False):
+    """
+    Download a report for a specific product and save it to a local file. This is a blocking call, and can sometimes take minutes to return if the report is very large.
+
+    Args:
+        token (str):
+            Auth token. This is the token returned by get_auth_token(). Just the token, do not include "Bearer" in this string, that is handled inside the method.
+        organization_context (str):
+            Organization context. This is provided by the Finite State API management. It looks like "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx".
+        product_id (str, required):
+            The Product ID to download the report for.
+        report_type (str, required):
+            The file type of the report to download. Valid values are "CSV".
+        report_subtype (str, required):
+            The type of report to download. Based on available reports for the `report_type` specified
+            Valid values for CSV are "ALL_FINDINGS".
+        output_filename (str, optional):
+            The local filename to save the report to. If not provided, the report will be saved to a file named "report.csv" or "report.pdf" in the current directory based on the report type.
+        verbose (bool, optional):
+            If True, will print additional information to the console. Defaults to False.
+    """
+    url = generate_report_download_url(token, organization_context, product_id=product_id, report_type=report_type, report_subtype=report_subtype, verbose=verbose)
+
+    # Send an HTTP GET request to the URL
+    response = requests.get(url)
+
+    # Check if the request was successful (status code 200)
+    if response.status_code == 200:
+        # Open a local file in binary write mode and write the content to it
+        if verbose:
+            print("File downloaded successfully.")
+        with open(output_filename, 'wb') as file:
+            file.write(response.content)
+            if verbose:
+                print(f'Wrote file to {output_filename}')
+    else:
+        raise Exception(f"Failed to download the file. Status code: {response.status_code}")
 
 
 def download_sbom(token, organization_context, sbom_type="CYCLONEDX", sbom_subtype="SBOM_ONLY", asset_version_id=None, output_filename="sbom.json", verbose=False):
@@ -1147,7 +1238,7 @@ def get_auth_token(client_id, client_secret, token_url=TOKEN_URL, audience=AUDIE
     return auth_token
 
 
-def get_findings(token, organization_context, asset_version_id=None, category=None):
+def get_findings(token, organization_context, asset_version_id=None, category=None, status=None, severity=None, count=False):
     """
     Gets all the Findings for an Asset Version. Uses pagination to get all results.
     Args:
@@ -1159,15 +1250,22 @@ def get_findings(token, organization_context, asset_version_id=None, category=No
             Asset Version ID to get findings for. If not provided, will get all findings in the organization.
         category (str, optional):
             The category of Findings to return. Valid values are "CONFIG_ISSUES", "CREDENTIALS", "CRYPTO_MATERIAL", "CVE", "SAST_ANALYSIS". If not specified, will return all findings. See https://docs.finitestate.io/types/finding-category
+        status (str, optional):
+            The status of Findings to return.
+        severity (str, optional):
+            The severity of Findings to return. Valid values are "CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO", and "UNKNOWN". If not specified, will return all findings.
+        count (bool, optional):
+            If True, will return the count of findings instead of the findings themselves. Defaults to False.
     Raises:
         Exception: Raised if the query fails, required parameters are not specified, or parameters are incompatible.
     Returns:
         list: List of Finding Objects
     """
-    if not asset_version_id:
-        raise Exception("Asset Version ID is required")
 
-    return get_all_paginated_results(token, organization_context, queries.GET_FINDINGS['query'], queries.GET_FINDINGS['variables'](asset_version_id=asset_version_id, category=category), 'allFindings')
+    if count:
+        return send_graphql_query(token, organization_context, queries.GET_FINDINGS_COUNT['query'], queries.GET_FINDINGS_COUNT['variables'](asset_version_id=asset_version_id, category=category, status=status, severity=severity))["data"]["_allFindingsMeta"]
+    else:
+        return get_all_paginated_results(token, organization_context, queries.GET_FINDINGS['query'], queries.GET_FINDINGS['variables'](asset_version_id=asset_version_id, category=category, status=status, severity=severity), 'allFindings')
 
 
 def get_product_asset_versions(token, organization_context, product_id=None):
@@ -1211,6 +1309,116 @@ def get_products(token, organization_context, business_unit_id=None) -> list:
         raise Exception("Business Unit ID is required")
 
     return get_all_paginated_results(token, organization_context, queries.GET_PRODUCTS_BUSINESS_UNIT['query'], queries.GET_PRODUCTS_BUSINESS_UNIT['variables'](business_unit_id), 'allProducts')
+
+
+def generate_report_download_url(token, organization_context, asset_version_id=None, product_id=None, report_type=None, report_subtype=None, verbose=False) -> str:
+    """
+    Blocking call: Initiates generation of a report, and returns a pre-signed URL for downloading the report.
+    This may take several minutes to complete, depending on the size of the report.
+
+    Args:
+        token (str):
+            Auth token. This is the token returned by get_auth_token(). Just the token, do not include "Bearer" in this string, that is handled inside the method.
+        organization_context (str):
+            Organization context. This is provided by the Finite State API management. It looks like "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx".
+        asset_version_id (str, optional):
+            Asset Version ID to download the report for. Either `asset_version_id` or `product_id` are required.
+        product_id (str, optional):
+            Product ID to download the report for. Either `asset_version_id` or `product_id` are required.
+        report_type (str, required):
+            The file type of the report to download. Valid values are "CSV" and "PDF".
+        report_subtype (str, required):
+            The type of report to download. Based on available reports for the `report_type` specified
+            Valid values for CSV are "ALL_FINDINGS", "ALL_COMPONENTS", "EXPLOIT_INTELLIGENCE".
+            Valid values for PDF are "RISK_SUMMARY".
+        verbose (bool, optional):
+            If True, print additional information to the console. Defaults to False.
+    """
+    if not report_type:
+        raise ValueError("Report Type is required")
+    if not report_subtype:
+        raise ValueError("Report Subtype is required")
+    if not asset_version_id and not product_id:
+        raise ValueError("Asset Version ID or Product ID is required")
+
+    if asset_version_id and product_id:
+        raise ValueError("Asset Version ID and Product ID are mutually exclusive")
+
+    if report_type not in ["CSV", "PDF"]:
+        raise Exception(f"Report Type {report_type} not supported")
+
+    if report_type == "CSV":
+        if report_subtype not in ["ALL_FINDINGS", "ALL_COMPONENTS", "EXPLOIT_INTELLIGENCE"]:
+            raise Exception(f"Report Subtype {report_subtype} not supported")
+
+        mutation = queries.LAUNCH_REPORT_EXPORT['mutation'](asset_version_id=asset_version_id, product_id=product_id, report_type=report_type, report_subtype=report_subtype)
+        variables = queries.LAUNCH_REPORT_EXPORT['variables'](asset_version_id=asset_version_id, product_id=product_id, report_type=report_type, report_subtype=report_subtype)
+
+        response_data = send_graphql_query(token, organization_context, mutation, variables)
+        if verbose:
+            print(f'Response Data: {json.dumps(response_data, indent=4)}')
+
+        # get exportJobId from the result
+        if asset_version_id:
+            export_job_id = response_data['data']['launchArtifactCSVExport']['exportJobId']
+        elif product_id:
+            export_job_id = response_data['data']['launchProductCSVExport']['exportJobId']
+        else:
+            raise Exception("Error: Export Job ID not found - this should not happen, please contact your Finite State representative")
+
+        if verbose:
+            print(f'Export Job ID: {export_job_id}')
+
+    if report_type == "PDF":
+        if report_subtype not in ["RISK_SUMMARY"]:
+            raise Exception(f"Report Subtype {report_subtype} not supported")
+
+        mutation = queries.LAUNCH_REPORT_EXPORT['mutation'](asset_version_id=asset_version_id, product_id=product_id, report_type=report_type, report_subtype=report_subtype)
+        variables = queries.LAUNCH_REPORT_EXPORT['variables'](asset_version_id=asset_version_id, product_id=product_id, report_type=report_type, report_subtype=report_subtype)
+
+        response_data = send_graphql_query(token, organization_context, mutation, variables)
+        if verbose:
+            print(f'Response Data: {json.dumps(response_data, indent=4)}')
+
+        # get exportJobId from the result
+        if asset_version_id:
+            export_job_id = response_data['data']['launchArtifactPdfExport']['exportJobId']
+        elif product_id:
+            export_job_id = response_data['data']['launchProductPdfExport']['exportJobId']
+        else:
+            raise Exception("Error: Export Job ID not found - this should not happen, please contact your Finite State representative")
+
+        if verbose:
+            print(f'Export Job ID: {export_job_id}')
+
+    if not export_job_id:
+        raise Exception("Error: Export Job ID not found - this should not happen, please contact your Finite State representative")
+
+    # poll the API until the export job is complete
+    sleep_time = 10
+    total_time = 0
+    if verbose:
+        print(f'Polling every {sleep_time} seconds for export job to complete')
+
+    while True:
+        time.sleep(sleep_time)
+        total_time += sleep_time
+        if verbose:
+            print(f'Total time elapsed: {total_time} seconds')
+
+        query = queries.GENERATE_EXPORT_DOWNLOAD_PRESIGNED_URL['query']
+        variables = queries.GENERATE_EXPORT_DOWNLOAD_PRESIGNED_URL['variables'](export_job_id)
+
+        response_data = send_graphql_query(token, organization_context, query, variables)
+
+        if verbose:
+            print(f'Response Data: {json.dumps(response_data, indent=4)}')
+
+        if response_data['data']['generateExportDownloadPresignedUrl']['status'] == 'COMPLETED':
+            if response_data['data']['generateExportDownloadPresignedUrl']['downloadLink']:
+                if verbose:
+                    print(f'Export Job Complete. Download URL: {response_data["data"]["generateExportDownloadPresignedUrl"]["downloadLink"]}')
+                return response_data['data']['generateExportDownloadPresignedUrl']['downloadLink']
 
 
 def generate_sbom_download_url(token, organization_context, sbom_type=None, sbom_subtype=None, asset_version_id=None, verbose=False) -> str:
@@ -1286,10 +1494,10 @@ def generate_sbom_download_url(token, organization_context, sbom_type=None, sbom
         raise Exception("Error: Export Job ID not found - this should not happen, please contact your Finite State representative")
 
     # poll the API until the export job is complete
-    if verbose:
-        print('Polling every 5 seconds for export job to complete')
-    total_time = 0
     sleep_time = 10
+    total_time = 0
+    if verbose:
+        print(f'Polling every {sleep_time} seconds for export job to complete')
     while True:
         time.sleep(sleep_time)
         total_time += sleep_time
@@ -1521,34 +1729,32 @@ def upload_file_for_binary_analysis(token, organization_context, test_id=None, f
 
     # Start Multi-part Upload
     graphql_query = '''
-    mutation Start($input: startMultipartUploadInput!) {
-        startMultipartUpload(input: $input) {
-            id
+    mutation Start($testId: ID!) {
+        startMultipartUploadV2(testId: $testId) {
+            uploadId
             key
         }
     }
     '''
 
     variables = {
-        "input": {
-            "testId": test_id
-        }
+        "testId": test_id
     }
 
     response = send_graphql_query(token, organization_context, graphql_query, variables)
 
-    upload_id = response['data']['startMultipartUpload']['id']
-    upload_key = response['data']['startMultipartUpload']['key']
+    upload_id = response['data']['startMultipartUploadV2']['uploadId']
+    upload_key = response['data']['startMultipartUploadV2']['key']
 
     # if the file is greater than max chunk size (or 5 GB), split the file in chunks,
-    # call generateUploadPartUrl for each chunk of the file (even if it is a single part)
+    # call generateUploadPartUrlV2 for each chunk of the file (even if it is a single part)
     # and upload the file to the returned upload URL
     i = 1
     part_data = []
     for chunk in file_chunks(file_path, chunk_size):
         graphql_query = '''
-        mutation GenerateUploadPartUrl($input: generateUploadPartUrlInput!) {
-            generateUploadPartUrl(input: $input) {
+        mutation GenerateUploadPartUrl($partNumber: Int!, $uploadId: ID!, $uploadKey: String!) {
+            generateUploadPartUrlV2(partNumber: $partNumber, uploadId: $uploadId, uploadKey: $uploadKey) {
                 key
                 uploadUrl
             }
@@ -1556,16 +1762,14 @@ def upload_file_for_binary_analysis(token, organization_context, test_id=None, f
         '''
 
         variables = {
-            "input": {
-                "partNumber": i,
-                "uploadId": upload_id,
-                "uploadKey": upload_key
-            }
+            "partNumber": i,
+            "uploadId": upload_id,
+            "uploadKey": upload_key
         }
 
         response = send_graphql_query(token, organization_context, graphql_query, variables)
 
-        chunk_upload_url = response['data']['generateUploadPartUrl']['uploadUrl']
+        chunk_upload_url = response['data']['generateUploadPartUrlV2']['uploadUrl']
 
         # upload the chunk to the upload URL
         response = upload_bytes_to_url(chunk_upload_url, chunk)
@@ -1575,22 +1779,38 @@ def upload_file_for_binary_analysis(token, organization_context, test_id=None, f
             "PartNumber": i
         })
 
-    # call completeMultiPartUpload
+    # call completeMultipartUploadV2
     graphql_query = '''
-    mutation CompleteMultipartUpload($input: CompleteMultipartUploadInput!) {
-        completeMultipartUpload(input: $input) {
+    mutation CompleteMultipartUpload($partData: [PartInput!]!, $uploadId: ID!, $uploadKey: String!) {
+        completeMultipartUploadV2(partData: $partData, uploadId: $uploadId, uploadKey: $uploadKey) {
             key
         }
     }
     '''
 
     variables = {
-        "input": {
-            "partData": part_data,
-            "testId": test_id,
-            "uploadId": upload_id,
-            "uploadKey": upload_key
+        "partData": part_data,
+        "uploadId": upload_id,
+        "uploadKey": upload_key
+    }
+
+    response = send_graphql_query(token, organization_context, graphql_query, variables)
+
+    # get key from the result
+    key = response['data']['completeMultipartUploadV2']['key']
+
+    # call launchBinaryUploadProcessing
+    graphql_query = '''
+    mutation LaunchBinaryUploadProcessing($key: String!, $testId: ID!) {
+        launchBinaryUploadProcessing(key: $key, testId: $testId) {
+            key
         }
+    }
+    '''
+
+    variables = {
+        "key": key,
+        "testId": test_id
     }
 
     response = send_graphql_query(token, organization_context, graphql_query, variables)
@@ -1626,8 +1846,8 @@ def upload_test_results_file(token, organization_context, test_id=None, file_pat
 
     # Gerneate Test Result Upload URL
     graphql_query = '''
-    mutation GenerateTestResultUploadUrl($input: generateTestResultUploadUrlInput!) {
-        generateTestResultUploadUrl(input: $input) {
+    mutation GenerateTestResultUploadUrl($testId: ID!) {
+        generateSinglePartUploadUrl(testId: $testId) {
             uploadUrl
             key
         }
@@ -1635,35 +1855,30 @@ def upload_test_results_file(token, organization_context, test_id=None, file_pat
     '''
 
     variables = {
-        "input": {
-            "orgId": organization_context,
-            "testId": test_id
-        }
+        "testId": test_id
     }
 
     response = send_graphql_query(token, organization_context, graphql_query, variables)
 
     # get the upload URL and key
-    upload_url = response['data']['generateTestResultUploadUrl']['uploadUrl']
-    key = response['data']['generateTestResultUploadUrl']['key']
+    upload_url = response['data']['generateSinglePartUploadUrl']['uploadUrl']
+    key = response['data']['generateSinglePartUploadUrl']['key']
 
     # upload the file
     upload_file_to_url(upload_url, file_path)
 
     # complete the upload
     graphql_query = '''
-    mutation CompleteTestResultUpload($input: completeTestResultUploadInput!) {
-        completeTestResultUpload(input: $input) {
+    mutation CompleteTestResultUpload($key: String!, $testId: ID!) {
+        launchTestResultProcessing(key: $key, testId: $testId) {
             key
         }
     }
     '''
 
     variables = {
-        "input": {
-            "testId": test_id,
-            "key": key
-        }
+        "testId": test_id,
+        "key": key
     }
 
     response = send_graphql_query(token, organization_context, graphql_query, variables)
