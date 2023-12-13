@@ -350,7 +350,7 @@ def create_new_asset_version_artifact_and_test_for_upload(token, organization_co
         return test_id
 
 
-def create_new_asset_version_and_upload_binary(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, version=None, file_path=None, product_id=None, artifact_description=None):
+def create_new_asset_version_and_upload_binary(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, version=None, file_path=None, product_id=None, artifact_description=None, quick_scan=False):
     """
     Creates a new Asset Version for an existing asset, and uploads a binary file for Finite State Binary Analysis.
     By default, this uses the existing Business Unit and Created By User for the Asset. If you need to change these, you can provide the IDs for them.
@@ -374,6 +374,8 @@ def create_new_asset_version_and_upload_binary(token, organization_context, busi
             Product ID to create the asset version for. If not provided, the existing Product for the Asset will be used, if it exists.
         artifact_description (str, optional):
             Description of the artifact. If not provided, the default is "Firmware Binary".
+        quick_scan (bool, optional):
+            If True, will upload the file for quick scan. Defaults to False (Full Scan). For details about Quick Scan vs Full Scan, please see the API documentation.
 
     Raises:
         ValueError: Raised if asset_id, version, or file_path are not provided.
@@ -395,7 +397,7 @@ def create_new_asset_version_and_upload_binary(token, organization_context, busi
     binary_test_id = create_new_asset_version_artifact_and_test_for_upload(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, version=version, product_id=product_id, test_type="finite_state_binary_analysis", artifact_description=artifact_description)
 
     # upload file for binary test
-    response = upload_file_for_binary_analysis(token, organization_context, test_id=binary_test_id, file_path=file_path)
+    response = upload_file_for_binary_analysis(token, organization_context, test_id=binary_test_id, file_path=file_path, quick_scan=quick_scan)
     return response
 
 
@@ -1696,7 +1698,7 @@ def send_graphql_query(token, organization_context, query, variables=None):
         raise Exception(f"Error: {response.status_code} - {response.text}")
 
 
-def upload_file_for_binary_analysis(token, organization_context, test_id=None, file_path=None, chunk_size=1024 * 1024 * 1024 * 5):
+def upload_file_for_binary_analysis(token, organization_context, test_id=None, file_path=None, chunk_size=1024 * 1024 * 1024 * 5, quick_scan=False):
     """
     Upload a file for Binary Analysis. Will automatically chunk the file into chunks and upload each chunk. Chunk size defaults to 5GB.
     NOTE: This is NOT for uploading third party scanner results. Use upload_test_results_file for that.
@@ -1712,6 +1714,8 @@ def upload_file_for_binary_analysis(token, organization_context, test_id=None, f
             Local path to the file to upload.
         chunk_size (int, optional):
             The size of the chunks to read. Defaults to 5GB.
+        quick_scan (bool, optional):
+            If True, will perform a quick scan of the Binary. Defaults to False (Full Scan). For details, please see the API documentation.
 
     Raises:
         ValueError: Raised if test_id or file_path are not provided.
@@ -1799,19 +1803,29 @@ def upload_file_for_binary_analysis(token, organization_context, test_id=None, f
     # get key from the result
     key = response['data']['completeMultipartUploadV2']['key']
 
-    # call launchBinaryUploadProcessing
-    graphql_query = '''
-    mutation LaunchBinaryUploadProcessing($key: String!, $testId: ID!) {
-        launchBinaryUploadProcessing(key: $key, testId: $testId) {
-            key
-        }
-    }
-    '''
-
     variables = {
         "key": key,
         "testId": test_id
     }
+
+    # call launchBinaryUploadProcessing
+    if quick_scan:
+        graphql_query = '''
+        mutation LaunchBinaryUploadProcessing($key: String!, $testId: ID!, $configurationOptions: [BinaryAnalysisConfigurationOption]) {
+            launchBinaryUploadProcessing(key: $key, testId: $testId, configurationOptions: $configurationOptions) {
+                key
+            }
+        }
+        '''
+        variables["configurationOptions"] = ["QUICK_SCAN"]
+    else:
+        graphql_query = '''
+        mutation LaunchBinaryUploadProcessing($key: String!, $testId: ID!) {
+            launchBinaryUploadProcessing(key: $key, testId: $testId) {
+                key
+            }
+        }
+        '''
 
     response = send_graphql_query(token, organization_context, graphql_query, variables)
 
