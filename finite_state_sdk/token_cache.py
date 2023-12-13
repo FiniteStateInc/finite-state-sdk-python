@@ -19,6 +19,7 @@ class TokenCache():
 
         self.client_id = client_id
         self.organization_context = organization_context
+        self.token_path = f'.tokencache/{self.organization_context}'
         if self.client_id:
             self.token_path = f'.tokencache/{self.organization_context}-{self.client_id}'
         else:
