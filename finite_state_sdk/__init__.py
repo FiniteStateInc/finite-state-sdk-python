@@ -1255,7 +1255,8 @@ def get_findings(token, organization_context, asset_version_id=None, category=No
         asset_version_id (str, optional):
             Asset Version ID to get findings for. If not provided, will get all findings in the organization.
         category (str, optional):
-            The category of Findings to return. Valid values are "CONFIG_ISSUES", "CREDENTIALS", "CRYPTO_MATERIAL", "CVE", "SAST_ANALYSIS". If not specified, will return all findings. See https://docs.finitestate.io/types/finding-category
+            The category of Findings to return. Valid values are "CONFIG_ISSUES", "CREDENTIALS", "CRYPTO_MATERIAL", "CVE", "SAST_ANALYSIS". If not specified, will return all findings. See https://docs.finitestate.io/types/finding-category.
+            This can be a single string, or an array of values.
         status (str, optional):
             The status of Findings to return.
         severity (str, optional):
