@@ -376,14 +376,16 @@ def _create_GET_FINDINGS_VARIABLES(asset_version_id=None, category=None, cve_id=
         else:
             variables["filter"]["assetVersionRefId"] = str(asset_version_id)
 
+    # if category is a string, make it a list
+    if isinstance(category, str):
+        category = [category]
+
     if category is not None:
         variables["filter"]["AND"] = [
             {
                 "OR": [
                     {
-                        "category_in": [
-                            category
-                        ]
+                        "category_in": category
                     }
                 ]
             },
