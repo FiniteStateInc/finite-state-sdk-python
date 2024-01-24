@@ -1,6 +1,7 @@
 import json
 import requests
 import time
+from warnings import warn
 import finite_state_sdk.queries as queries
 
 API_URL = 'https://platform.finitestate.io/api/v1/graphql'
@@ -1108,7 +1109,10 @@ def get_all_products(token, organization_context):
 
     Returns:
         list: List of Product Objects
+
+    .. deprecated:: 0.1.4. Use get_products instead.
     """
+    warn('`get_all_products` is deprecated. Use: `get_products instead`', DeprecationWarning, stacklevel=2)
     return get_all_paginated_results(token, organization_context, queries.ALL_PRODUCTS['query'], queries.ALL_PRODUCTS['variables'], 'allProducts')
 
 
@@ -1291,7 +1295,7 @@ def get_product_asset_versions(token, organization_context, product_id=None):
     return get_all_paginated_results(token, organization_context, queries.GET_PRODUCT_ASSET_VERSIONS['query'], queries.GET_PRODUCT_ASSET_VERSIONS['variables'](product_id), 'allProducts')
 
 
-def get_products(token, organization_context, business_unit_id=None) -> list:
+def get_products(token, organization_context, product_id=None, business_unit_id=None) -> list:
     """
     Gets all the products for the specified business unit.
     Args:
@@ -1299,6 +1303,8 @@ def get_products(token, organization_context, business_unit_id=None) -> list:
             Auth token. This is the token returned by get_auth_token(). Just the token, do not include "Bearer" in this string, that is handled inside the method.
         organization_context (str):
             Organization context. This is provided by the Finite State API management. It looks like "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx".
+        product_id (str, optional):
+            Product ID to get. If not provided, will get all products in the organization.
         business_unit_id (str, optional):
             Business Unit ID to get products for. If not provided, will get all products in the organization.
     Raises:
@@ -1307,10 +1313,7 @@ def get_products(token, organization_context, business_unit_id=None) -> list:
         list: List of Product Objects
     """
 
-    if not business_unit_id:
-        raise Exception("Business Unit ID is required")
-
-    return get_all_paginated_results(token, organization_context, queries.GET_PRODUCTS_BUSINESS_UNIT['query'], queries.GET_PRODUCTS_BUSINESS_UNIT['variables'](business_unit_id), 'allProducts')
+    return get_all_paginated_results(token, organization_context, queries.GET_PRODUCTS['query'], queries.GET_PRODUCTS['variables'](product_id=product_id, business_unit_id=business_unit_id), 'allProducts')
 
 
 def generate_report_download_url(token, organization_context, asset_version_id=None, product_id=None, report_type=None, report_subtype=None, verbose=False) -> str:

@@ -247,10 +247,24 @@ ALL_ARTIFACTS = {
                     id
                     name
                     createdAt
+                    createdBy {
+                        id
+                        email
+                        __typename
+                    }
+                    deletedAt
                     ctx {
                         asset
                         businessUnits
                         products
+                    }
+                    defaultVersion {
+                        name
+                        createdAt
+                        __typename
+                    }
+                    _versionsMeta {
+                        count
                     }
                     __typename
                 }
@@ -663,6 +677,57 @@ query GetSoftwareComponentsForAnAssetVersion (
 }
 """,
     "variables": lambda asset_version_id=None, type=None: _create_GET_SOFTWARE_COMPONENTS_VARIABLES(asset_version_id=asset_version_id, type=type)
+}
+
+
+def _create_GET_PRODUCTS_VARIABLES(product_id=None, business_unit_id=None):
+    variables = {
+        "filter": {},
+        "after": None,
+        "first": 100
+    }
+
+    if product_id:
+        variables["filter"]["id"] = product_id
+
+    if business_unit_id:
+        variables["filter"]["group"] = {
+            "id": business_unit_id
+        }
+
+    return variables
+
+
+GET_PRODUCTS = {
+    "query": """
+        query GetAllProducts(
+            $filter: ProductFilter!,
+            $after: String,
+            $first: Int
+            ) {
+                allProducts(
+                    filter: $filter,
+                    after: $after,
+                    first: $first
+                ) {
+                    _cursor
+                    id
+                    name
+                    createdAt
+                    createdBy {
+                        id
+                        email
+                        __typename
+                    }
+                    group {
+                        id
+                        name
+                    }
+                    __typename
+                }
+            }
+        """,
+    "variables": lambda product_id=None, business_unit_id=None: _create_GET_PRODUCTS_VARIABLES(product_id=product_id, business_unit_id=business_unit_id)
 }
 
 
