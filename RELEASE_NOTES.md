@@ -1,5 +1,19 @@
 # Finite State Python SDK RELEASE NOTES
 
+# v0.1.4
+
+## New Features
+
+* get_products call now takes product_id, and business_unit_id as optional parameters
+
+## Bug Fixes
+
+* get_products parameter business_unit_id was marked as optional but was not
+
+## Breaking Changes
+
+* Marked get_all_products as deprecated, and it will be removed in a future version
+
 # v0.1.0
 
 Updated minor version due to breaking change.
