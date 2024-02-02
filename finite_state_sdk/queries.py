@@ -40,6 +40,11 @@ ALL_USERS = {
             _cursor
             id
             email
+            groups {
+                id
+                name
+                __typename
+            }
             __typename
         }
     }
