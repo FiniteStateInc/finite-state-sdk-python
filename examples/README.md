@@ -47,6 +47,10 @@ How to make custom queries using pagination and helper methods in the SDK.
 
 How to use the `search_sbom` function of the SDK to search for components by name and version, and specify whether the search should be case-sensitive or not.
 
+# update_finding_status.py
+
+How to update Finding resolutions using the SDK, which allows you to set the status and specify justifications or vendor responses and provide comments.
+
 # upload_test_results.py
 
 How to programmatically upload test results (e.g. SBOMs or Third Party Scanners). Basically a one-liner you can add to your CI systems.
