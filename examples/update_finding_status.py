@@ -30,7 +30,6 @@ def main():
     # if specifying multiple, they will all have the same resolution and comment
     finding_ids = ['123456789', '234567891']  # replace with your finding IDs
 
-
     # -------- NOT AFFECTED EXAMPLE --------
 
     # The status to apply to the Findings
@@ -44,14 +43,13 @@ def main():
     justification = "COMPONENT_NOT_PRESENT"
 
     # The comment will be applied to the Finding resolution
-    comment = "Updating status to NOT_AFFECTED with justification: COMPONENT_NOT_PRESENT for finding_ids: {finding_ids}")
+    comment = "Updating status to NOT_AFFECTED with justification: COMPONENT_NOT_PRESENT for finding_ids: {finding_ids}"
 
     # For more info see: https://docs.finitestate.io/mutations/update-findings-statuses
     gql_response = finite_state_sdk.update_findings_status(token, ORGANIZATION_CONTEXT, status=new_status, justification=justification, comment=comment)
 
     updated_finding_ids = gql_response["data"]["updateFindingsStatuses"]["ids"]
     print(f'Updated {len(updated_finding_ids)} findings')
-
 
     # -------- AFFECTED EXAMPLE --------
 
@@ -66,7 +64,7 @@ def main():
     response = "CANNOT_FIX"
 
     # The comment will be applied to the Finding resolution
-    comment = "Updating status to AFFECTED with response: CANNOT_FIX for finding_ids: {finding_ids}")
+    comment = "Updating status to AFFECTED with response: CANNOT_FIX for finding_ids: {finding_ids}"
 
     # For more info see: https://docs.finitestate.io/mutations/update-findings-statuses
     gql_response = finite_state_sdk.update_findings_status(token, ORGANIZATION_CONTEXT, status=new_status, response=response, comment=comment)
