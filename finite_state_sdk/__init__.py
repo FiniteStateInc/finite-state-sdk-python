@@ -1032,7 +1032,7 @@ def get_all_organizations(token, organization_context):
     return get_all_paginated_results(token, organization_context, queries.ALL_ORGANIZATIONS['query'], queries.ALL_ORGANIZATIONS['variables'], 'allOrganizations')
 
 
-def get_all_paginated_results(token, organization_context, query, variables=None, field=None):
+def get_all_paginated_results(token, organization_context, query, variables=None, field=None, limit=None):
     """
     Get all results from a paginated GraphQL query
 
@@ -1047,6 +1047,8 @@ def get_all_paginated_results(token, organization_context, query, variables=None
             Variables to be used in the GraphQL query, by default None
         field (str, required):
             The field in the response JSON that contains the results
+        limit (int, optional):
+            The maximum number of results to return. If not provided, will return all results. By default None
 
     Raises:
         Exception: If the response status code is not 200, or if the field is not in the response JSON
@@ -1079,6 +1081,10 @@ def get_all_paginated_results(token, organization_context, query, variables=None
         cursor = response_data['data'][field][len(response_data['data'][field]) - 1]['_cursor']
 
         while cursor:
+            if limit is not None:
+                if len(results) >= limit:
+                    break
+
             variables['after'] = cursor
 
             # add the next page of results to the list
@@ -1244,7 +1250,7 @@ def get_auth_token(client_id, client_secret, token_url=TOKEN_URL, audience=AUDIE
     return auth_token
 
 
-def get_findings(token, organization_context, asset_version_id=None, finding_id=None, category=None, status=None, severity=None, count=False):
+def get_findings(token, organization_context, asset_version_id=None, finding_id=None, category=None, status=None, severity=None, count=False, limit=None):
     """
     Gets all the Findings for an Asset Version. Uses pagination to get all results.
     Args:
@@ -1265,6 +1271,8 @@ def get_findings(token, organization_context, asset_version_id=None, finding_id=
             The severity of Findings to return. Valid values are "CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO", and "UNKNOWN". If not specified, will return all findings.
         count (bool, optional):
             If True, will return the count of findings instead of the findings themselves. Defaults to False.
+        limit (int, optional):
+            The maximum number of findings to return. If not specified, will return all findings, up to the default of 1000.
 
     Raises:
         Exception: Raised if the query fails, required parameters are not specified, or parameters are incompatible.
@@ -1274,9 +1282,9 @@ def get_findings(token, organization_context, asset_version_id=None, finding_id=
     """
 
     if count:
-        return send_graphql_query(token, organization_context, queries.GET_FINDINGS_COUNT['query'], queries.GET_FINDINGS_COUNT['variables'](asset_version_id=asset_version_id, finding_id=finding_id, category=category, status=status, severity=severity))["data"]["_allFindingsMeta"]
+        return send_graphql_query(token, organization_context, queries.GET_FINDINGS_COUNT['query'], queries.GET_FINDINGS_COUNT['variables'](asset_version_id=asset_version_id, finding_id=finding_id, category=category, status=status, severity=severity, limit=limit))["data"]["_allFindingsMeta"]
     else:
-        return get_all_paginated_results(token, organization_context, queries.GET_FINDINGS['query'], queries.GET_FINDINGS['variables'](asset_version_id=asset_version_id, finding_id=finding_id, category=category, status=status, severity=severity), 'allFindings')
+        return get_all_paginated_results(token, organization_context, queries.GET_FINDINGS['query'], queries.GET_FINDINGS['variables'](asset_version_id=asset_version_id, finding_id=finding_id, category=category, status=status, severity=severity, limit=limit), 'allFindings', limit=limit)
 
 
 def get_product_asset_versions(token, organization_context, product_id=None):
