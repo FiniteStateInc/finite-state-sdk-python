@@ -369,7 +369,7 @@ query GetProductAssetVersions(
 }
 
 
-def _create_GET_FINDINGS_VARIABLES(asset_version_id=None, category=None, cve_id=None, status=None, severity=None, limit=1000, count=False):
+def _create_GET_FINDINGS_VARIABLES(asset_version_id=None, category=None, cve_id=None, finding_id=None, status=None, severity=None, limit=1000, count=False):
     variables = {
         "filter": {
             "mergedFindingRefId": None,
@@ -383,6 +383,13 @@ def _create_GET_FINDINGS_VARIABLES(asset_version_id=None, category=None, cve_id=
         variables["first"] = limit
         variables["orderBy"] = ["title_ASC"]
 
+    if finding_id is not None:
+        # if finding_id is a list, use the "in" operator
+        if isinstance(finding_id, list):
+            variables["filter"]["id_in"] = finding_id
+        else:
+            variables["filter"]["id"] = str(finding_id)
+
     if asset_version_id is not None:
         # if asset_version_id is a list, use the "in" operator
         if isinstance(asset_version_id, list):
@@ -390,14 +397,16 @@ def _create_GET_FINDINGS_VARIABLES(asset_version_id=None, category=None, cve_id=
         else:
             variables["filter"]["assetVersionRefId"] = str(asset_version_id)
 
+    # if category is a string, make it a list
+    if isinstance(category, str):
+        category = [category]
+
     if category is not None:
         variables["filter"]["AND"] = [
             {
                 "OR": [
                     {
-                        "category_in": [
-                            category
-                        ]
+                        "category_in": category
                     }
                 ]
             },
@@ -451,7 +460,7 @@ query GetFindingsCount($filter: FindingFilter)
     }
 }
 """,
-    "variables": lambda asset_version_id=None, category=None, cve_id=None, status=None, severity=None, limit=None: _create_GET_FINDINGS_VARIABLES(asset_version_id=asset_version_id, category=category, cve_id=cve_id, status=status, severity=severity, limit=limit, count=True)
+    "variables": lambda asset_version_id=None, category=None, cve_id=None, finding_id=None, status=None, severity=None, limit=None: _create_GET_FINDINGS_VARIABLES(asset_version_id=asset_version_id, category=category, cve_id=cve_id, finding_id=finding_id, status=status, severity=severity, limit=limit, count=True)
 }
 
 GET_FINDINGS = {
@@ -500,6 +509,7 @@ query GetFindingsForAnAssetVersion (
             }
             id
             justification
+            responses
             status
             updatedAt
             __typename
@@ -564,7 +574,7 @@ query GetFindingsForAnAssetVersion (
         __typename
     }
 }""",
-    "variables": lambda asset_version_id=None, category=None, cve_id=None, status=None, severity=None, limit=None: _create_GET_FINDINGS_VARIABLES(asset_version_id=asset_version_id, category=category, cve_id=cve_id, severity=severity, status=status, limit=limit)
+    "variables": lambda asset_version_id=None, category=None, cve_id=None, finding_id=None, status=None, severity=None, limit=None: _create_GET_FINDINGS_VARIABLES(asset_version_id=asset_version_id, category=category, cve_id=cve_id, finding_id=finding_id, severity=severity, status=status, limit=limit)
 }
 
 
@@ -921,6 +931,42 @@ ONE_PRODUCT_ALL_ASSET_VERSIONS = {
         "first": 100
     }
 }
+
+
+def __create_UPDATE_FINDING_STATUSES_VARIABLES(user_id=None, finding_ids=None, status=None, justification=None, response=None, comment=None):
+    if not isinstance(finding_ids, list):
+        finding_ids = [finding_ids]
+
+    if status == "AFFECTED":
+        if justification is not None:
+            raise Exception("justification pertains to status NOT AFFECTED. Specify response instead.")
+    elif status == "NOT_AFFECTED":
+        if response is not None:
+            raise Exception("response pertains to status AFFECTED. Specify justification instead.")
+
+    return {
+        "ids": finding_ids,
+        "updateStatusInput": {
+                "comment": comment,
+                "status": status,
+                "justification": justification,
+                "responses": response
+        },
+        "userId": user_id
+    }
+
+
+UPDATE_FINDING_STATUSES = {
+    "mutation": """
+mutation UpdateFindingsStatuses($ids: [ID!]!, $updateStatusInput: UpdateFindingStatusesInput!, $userId: ID!) {
+    updateFindingsStatuses(ids: $ids, updateStatusInput: $updateStatusInput, userId: $userId) {
+        ids
+    }
+}
+    """,
+    "variables": lambda user_id=None, finding_ids=None, status=None, justification=None, response=None, comment=None: __create_UPDATE_FINDING_STATUSES_VARIABLES(user_id=user_id, finding_ids=finding_ids, status=status, justification=justification, response=response, comment=comment)
+}
+
 
 __all__ = [
     "ALL_BUSINESS_UNITS",

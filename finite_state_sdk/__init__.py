@@ -1032,7 +1032,7 @@ def get_all_organizations(token, organization_context):
     return get_all_paginated_results(token, organization_context, queries.ALL_ORGANIZATIONS['query'], queries.ALL_ORGANIZATIONS['variables'], 'allOrganizations')
 
 
-def get_all_paginated_results(token, organization_context, query, variables=None, field=None):
+def get_all_paginated_results(token, organization_context, query, variables=None, field=None, limit=None):
     """
     Get all results from a paginated GraphQL query
 
@@ -1047,6 +1047,8 @@ def get_all_paginated_results(token, organization_context, query, variables=None
             Variables to be used in the GraphQL query, by default None
         field (str, required):
             The field in the response JSON that contains the results
+        limit (int, optional):
+            The maximum number of results to return. If not provided, will return all results. By default None
 
     Raises:
         Exception: If the response status code is not 200, or if the field is not in the response JSON
@@ -1079,6 +1081,10 @@ def get_all_paginated_results(token, organization_context, query, variables=None
         cursor = response_data['data'][field][len(response_data['data'][field]) - 1]['_cursor']
 
         while cursor:
+            if limit is not None:
+                if len(results) >= limit:
+                    break
+
             variables['after'] = cursor
 
             # add the next page of results to the list
@@ -1244,7 +1250,7 @@ def get_auth_token(client_id, client_secret, token_url=TOKEN_URL, audience=AUDIE
     return auth_token
 
 
-def get_findings(token, organization_context, asset_version_id=None, category=None, status=None, severity=None, count=False):
+def get_findings(token, organization_context, asset_version_id=None, finding_id=None, category=None, status=None, severity=None, count=False, limit=None):
     """
     Gets all the Findings for an Asset Version. Uses pagination to get all results.
     Args:
@@ -1254,24 +1260,31 @@ def get_findings(token, organization_context, asset_version_id=None, category=No
             Organization context. This is provided by the Finite State API management. It looks like "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx".
         asset_version_id (str, optional):
             Asset Version ID to get findings for. If not provided, will get all findings in the organization.
+        finding_id (str, optional):
+            The ID of a specific finding to get. If specified, will return only the finding with that ID.
         category (str, optional):
-            The category of Findings to return. Valid values are "CONFIG_ISSUES", "CREDENTIALS", "CRYPTO_MATERIAL", "CVE", "SAST_ANALYSIS". If not specified, will return all findings. See https://docs.finitestate.io/types/finding-category
+            The category of Findings to return. Valid values are "CONFIG_ISSUES", "CREDENTIALS", "CRYPTO_MATERIAL", "CVE", "SAST_ANALYSIS". If not specified, will return all findings. See https://docs.finitestate.io/types/finding-category.
+            This can be a single string, or an array of values.
         status (str, optional):
             The status of Findings to return.
         severity (str, optional):
             The severity of Findings to return. Valid values are "CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO", and "UNKNOWN". If not specified, will return all findings.
         count (bool, optional):
             If True, will return the count of findings instead of the findings themselves. Defaults to False.
+        limit (int, optional):
+            The maximum number of findings to return. If not specified, will return all findings, up to the default of 1000.
+
     Raises:
         Exception: Raised if the query fails, required parameters are not specified, or parameters are incompatible.
+
     Returns:
         list: List of Finding Objects
     """
 
     if count:
-        return send_graphql_query(token, organization_context, queries.GET_FINDINGS_COUNT['query'], queries.GET_FINDINGS_COUNT['variables'](asset_version_id=asset_version_id, category=category, status=status, severity=severity))["data"]["_allFindingsMeta"]
+        return send_graphql_query(token, organization_context, queries.GET_FINDINGS_COUNT['query'], queries.GET_FINDINGS_COUNT['variables'](asset_version_id=asset_version_id, finding_id=finding_id, category=category, status=status, severity=severity, limit=limit))["data"]["_allFindingsMeta"]
     else:
-        return get_all_paginated_results(token, organization_context, queries.GET_FINDINGS['query'], queries.GET_FINDINGS['variables'](asset_version_id=asset_version_id, category=category, status=status, severity=severity), 'allFindings')
+        return get_all_paginated_results(token, organization_context, queries.GET_FINDINGS['query'], queries.GET_FINDINGS['variables'](asset_version_id=asset_version_id, finding_id=finding_id, category=category, status=status, severity=severity, limit=limit), 'allFindings', limit=limit)
 
 
 def get_product_asset_versions(token, organization_context, product_id=None):
@@ -1699,6 +1712,48 @@ def send_graphql_query(token, organization_context, query, variables=None):
         return thejson
     else:
         raise Exception(f"Error: {response.status_code} - {response.text}")
+
+
+def update_finding_statuses(token, organization_context, user_id=None, finding_ids=None, status=None, justification=None, response=None, comment=None):
+    """
+    Updates the status of a findings or multiple findings. This is a blocking call.
+
+    Args:
+        token (str):
+            Auth token. This is the token returned by get_auth_token(). Just the token, do not include "Bearer" in this string.
+        organization_context (str):
+            Organization context. This is provided by the Finite State API management. It looks like "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx".
+        user_id (str, required):
+            User ID to update the finding status for.
+        finding_ids (str, required):
+            Finding ID to update the status for.
+        status (str, required):
+            Status to update the finding to. Valid values are "AFFECTED", "FIXED", "NOT_AFFECTED", and "UNDER_INVESTIGATION". For more details, see https://docs.finitestate.io/types/finding-status-option
+        justification (str, optional):
+            Optional justification that applies to status of "NOT AFFECTED". Valid values are "COMPONENT_NOT_PRESENT", "INLINE_MITIGATIONS_ALREADY_EXIST", "VULNERABLE_CODE_CANNOT_BE_CONTROLLED_BY_ADVERSARY", "VULNERABLE_CODE_NOT_IN_EXECUTE_PATH", "VULNERABLE_CODE_NOT_PRESENT". For more details see https://docs.finitestate.io/types/finding-status-justification-enum
+        response (str, optional):
+            Optional "Vendor Responses" that applies to status of "AFFECTED". Valid values are "CANNOT_FIX", "ROLLBACK_REQUIRED", "UPDATE_REQUIRED", "WILL_NOT_FIX", and "WORKAROUND_AVAILABLE". For more details, see  https://docs.finitestate.io/types/finding-status-response-enum
+        comment (str, optional):
+            Optional comment to add to the finding status update.
+
+    Raises:
+        ValueError: Raised if required parameters are not provided.
+        Exception: Raised if the query fails.
+
+    Returns:
+        dict: Response JSON from the GraphQL query of type UpdateFindingsStatusesResponse. For details see https://docs.finitestate.io/types/update-findings-statuses-response
+    """
+    if not user_id:
+        raise ValueError("User ID is required")
+    if not finding_ids:
+        raise ValueError("Finding ID is required")
+    if not status:
+        raise ValueError("Status is required")
+
+    mutation = queries.UPDATE_FINDING_STATUSES['mutation']
+    variables = queries.UPDATE_FINDING_STATUSES['variables'](user_id=user_id, finding_ids=finding_ids, status=status, justification=justification, response=response, comment=comment)
+
+    return send_graphql_query(token, organization_context, mutation, variables)
 
 
 def upload_file_for_binary_analysis(token, organization_context, test_id=None, file_path=None, chunk_size=1024 * 1024 * 1024 * 5, quick_scan=False):
