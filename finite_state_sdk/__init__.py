@@ -250,7 +250,7 @@ def create_asset_version(token, organization_context, business_unit_id=None, cre
     return response['data']
 
 
-def create_new_asset_version_artifact_and_test_for_upload(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, version=None, product_id=None, test_type=None, artifact_description=None):
+def create_new_asset_version_artifact_and_test_for_upload(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, version=None, product_id=None, test_type=None, artifact_description=None, upload_method="API"):
     """
     Creates the entities needed for uploading a file for Binary Analysis or test results from a third party scanner to an existing Asset. This will create a new Asset Version, Artifact, and Test.
     This method is used by the upload_file_for_binary_analysis and upload_test_results_file methods, which are generally easier to use for basic use cases.
@@ -274,6 +274,9 @@ def create_new_asset_version_artifact_and_test_for_upload(token, organization_co
             Test type to create the test for. Must be one of "finite_state_binary_analysis" or of the list of supported third party test types. For the full list, see the API documenation.
         artifact_description (str, optional):
             Description to use for the artifact. Examples inlcude "Firmware", "Source Code Repository". This will be appended to the default Artifact description. If none is provided, the default Artifact description will be used.
+        upload_method (str, optional):
+            The method of uploading the test results. Valid values are "WEB_APP_UI", "API", "GITHUB_INTEGRATION" and "AZURE_DEVOPS_INTEGRATION". Default is "API".
+
 
     Raises:
         ValueError: Raised if asset_id or version are not provided.
@@ -330,7 +333,7 @@ def create_new_asset_version_artifact_and_test_for_upload(token, organization_co
 
         # create the test
         test_name = f"{asset_name} {version} - Finite State Binary Analysis"
-        response = create_test_as_binary_analysis(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, artifact_id=binary_artifact_id, product_id=asset_product_ids, test_name=test_name)
+        response = create_test_as_binary_analysis(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, artifact_id=binary_artifact_id, product_id=asset_product_ids, test_name=test_name, upload_method=upload_method)
         test_id = response['createTest']['id']
         return test_id
 
@@ -351,7 +354,7 @@ def create_new_asset_version_artifact_and_test_for_upload(token, organization_co
         return test_id
 
 
-def create_new_asset_version_and_upload_binary(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, version=None, file_path=None, product_id=None, artifact_description=None, quick_scan=False):
+def create_new_asset_version_and_upload_binary(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, version=None, file_path=None, product_id=None, artifact_description=None, quick_scan=False, upload_method: str = "API"):
     """
     Creates a new Asset Version for an existing asset, and uploads a binary file for Finite State Binary Analysis.
     By default, this uses the existing Business Unit and Created By User for the Asset. If you need to change these, you can provide the IDs for them.
@@ -377,6 +380,8 @@ def create_new_asset_version_and_upload_binary(token, organization_context, busi
             Description of the artifact. If not provided, the default is "Firmware Binary".
         quick_scan (bool, optional):
             If True, will upload the file for quick scan. Defaults to False (Full Scan). For details about Quick Scan vs Full Scan, please see the API documentation.
+        upload_method (str, optional):
+            Upload method to use. Defaults to "API".
 
     Raises:
         ValueError: Raised if asset_id, version, or file_path are not provided.
@@ -545,7 +550,7 @@ def create_product(token, organization_context, business_unit_id=None, created_b
     return response['data']
 
 
-def create_test(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, artifact_id=None, test_name=None, product_id=None, test_type=None, tools=[]):
+def create_test(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, artifact_id=None, test_name=None, product_id=None, test_type=None, tools=[], upload_method=None):
     """
     Create a new Test object for uploading files.
     This is an advanced method - you are probably looking for create_new_asset_version_and_upload_test_results or create_new_asset_version_and_upload_binary.
@@ -574,6 +579,8 @@ def create_test(token, organization_context, business_unit_id=None, created_by_u
             The type of test being created. Valid values are "cyclonedx" and "finite_state_binary_analysis".
         tools (list, optional):
             List of Tool objects used to perform the test. Each Tool object is a dict that should have a "name" and "description" field. This is used to describe the actual scanner that was used to perform the test.
+        upload_method (str, optional):
+            The method of uploading the test results. Valid values are "WEB_APP_UI", "API", "GITHUB_INTEGRATION" and "AZURE_DEVOPS_INTEGRATION".
 
     Raises:
         ValueError: Raised if business_unit_id, created_by_user_id, asset_id, artifact_id, test_name, or test_type are not provided.
@@ -625,6 +632,7 @@ def create_test(token, organization_context, business_unit_id=None, created_by_u
                 products
                 businessUnits
             }
+            uploadMethod
         }
     }
     '''
@@ -640,7 +648,8 @@ def create_test(token, organization_context, business_unit_id=None, created_by_u
                 "asset": asset_id,
                 "businessUnits": [business_unit_id]
             },
-            "tools": tools
+            "tools": tools,
+            "uploadMethod": upload_method
         }
     }
 
@@ -651,7 +660,7 @@ def create_test(token, organization_context, business_unit_id=None, created_by_u
     return response['data']
 
 
-def create_test_as_binary_analysis(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, artifact_id=None, test_name=None, product_id=None):
+def create_test_as_binary_analysis(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, artifact_id=None, test_name=None, product_id=None, upload_method=None):
     """
     Create a new Test object for uploading files for Finite State Binary Analysis.
 
@@ -672,6 +681,8 @@ def create_test_as_binary_analysis(token, organization_context, business_unit_id
             The name of the Test being created.
         product_id (str, optional):
             Product ID to associate the Test with. If not specified, the Test will not be associated with a product.
+        upload_method (str, optional):
+            The method of uploading the test results. Valid values are "WEB_APP_UI", "API", "GITHUB_INTEGRATION" and "AZURE_DEVOPS_INTEGRATION".
 
     Raises:
         ValueError: Raised if business_unit_id, created_by_user_id, asset_id, artifact_id, or test_name are not provided.
@@ -686,7 +697,7 @@ def create_test_as_binary_analysis(token, organization_context, business_unit_id
             "name": "Finite State Binary Analysis"
         }
     ]
-    return create_test(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, artifact_id=artifact_id, test_name=test_name, product_id=product_id, test_type="finite_state_binary_analysis", tools=tools)
+    return create_test(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, artifact_id=artifact_id, test_name=test_name, product_id=product_id, test_type="finite_state_binary_analysis", tools=tools, upload_method=upload_method)
 
 
 def create_test_as_cyclone_dx(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, artifact_id=None, test_name=None, product_id=None):
