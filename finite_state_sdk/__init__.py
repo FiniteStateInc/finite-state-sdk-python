@@ -381,7 +381,7 @@ def create_new_asset_version_and_upload_binary(token, organization_context, busi
         quick_scan (bool, optional):
             If True, will upload the file for quick scan. Defaults to False (Full Scan). For details about Quick Scan vs Full Scan, please see the API documentation.
         upload_method (str, optional):
-            Upload method to use. Defaults to "API".
+            The method of uploading the test results. Valid values are "WEB_APP_UI", "API", "GITHUB_INTEGRATION" and "AZURE_DEVOPS_INTEGRATION". Default "API".
 
     Raises:
         ValueError: Raised if asset_id, version, or file_path are not provided.
@@ -400,14 +400,14 @@ def create_new_asset_version_and_upload_binary(token, organization_context, busi
     # create the asset version and binary test
     if not artifact_description:
         artifact_description = "Firmware Binary"
-    binary_test_id = create_new_asset_version_artifact_and_test_for_upload(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, version=version, product_id=product_id, test_type="finite_state_binary_analysis", artifact_description=artifact_description)
+    binary_test_id = create_new_asset_version_artifact_and_test_for_upload(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, version=version, product_id=product_id, test_type="finite_state_binary_analysis", artifact_description=artifact_description, upload_method=upload_method)
 
     # upload file for binary test
     response = upload_file_for_binary_analysis(token, organization_context, test_id=binary_test_id, file_path=file_path, quick_scan=quick_scan)
     return response
 
 
-def create_new_asset_version_and_upload_test_results(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, version=None, file_path=None, product_id=None, test_type=None, artifact_description=""):
+def create_new_asset_version_and_upload_test_results(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, version=None, file_path=None, product_id=None, test_type=None, artifact_description="", upload_method = "API"):
     """
     Creates a new Asset Version for an existing asset, and uploads test results for that asset version.
     By default, this uses the existing Business Unit and Created By User for the Asset. If you need to change these, you can provide the IDs for them.
@@ -433,6 +433,8 @@ def create_new_asset_version_and_upload_test_results(token, organization_context
             Test type. This must be one of the list of supported third party scanner types. For the full list of supported third party scanner types, see the Finite State API documentation.
         artifact_description (str, optional):
             Description of the artifact being scanned (e.g. "Source Code Repository", "Container Image"). If not provided, the default artifact description will be used.
+        upload_method (str, optional):
+            The method of uploading the test results. Valid values are "WEB_APP_UI", "API", "GITHUB_INTEGRATION" and "AZURE_DEVOPS_INTEGRATION". Default "API".
 
     Raises:
         ValueError: If the asset_id, version, or file_path are not provided.
@@ -451,7 +453,7 @@ def create_new_asset_version_and_upload_test_results(token, organization_context
         raise ValueError("Test type is required")
 
     # create the asset version and test
-    test_id = create_new_asset_version_artifact_and_test_for_upload(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, version=version, product_id=product_id, test_type=test_type, artifact_description=artifact_description)
+    test_id = create_new_asset_version_artifact_and_test_for_upload(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, version=version, product_id=product_id, test_type=test_type, artifact_description=artifact_description, upload_method=upload_method)
 
     # upload test results file
     response = upload_test_results_file(token, organization_context, test_id=test_id, file_path=file_path)
