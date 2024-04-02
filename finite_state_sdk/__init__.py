@@ -1,4 +1,6 @@
 import json
+from enum import Enum
+
 import requests
 import time
 from warnings import warn
@@ -9,7 +11,24 @@ AUDIENCE = "https://platform.finitestate.io/api/v1/graphql"
 TOKEN_URL = "https://platform.finitestate.io/api/v1/auth/token"
 
 
-def create_artifact(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_version_id=None, artifact_name=None, product_id=None):
+class UploadMethod(Enum):
+    """
+    Enumeration class representing different upload methods.
+
+    Attributes:
+        WEB_APP_UI: Upload method via web application UI.
+        API: Upload method via API.
+        GITHUB_INTEGRATION: Upload method via GitHub integration.
+        AZURE_DEVOPS_INTEGRATION: Upload method via Azure DevOps integration.
+    """
+    WEB_APP_UI = "WEB_APP_UI"
+    API = "API"
+    GITHUB_INTEGRATION = "GITHUB_INTEGRATION"
+    AZURE_DEVOPS_INTEGRATION = "AZURE_DEVOPS_INTEGRATION"
+
+
+def create_artifact(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_version_id=None,
+                    artifact_name=None, product_id=None):
     """
     Create a new Artifact.
     This is an advanced method - you are probably looking for create_new_asset_version_and_upload_test_results or create_new_asset_version_and_upload_binary.
@@ -95,7 +114,8 @@ def create_artifact(token, organization_context, business_unit_id=None, created_
     return response['data']
 
 
-def create_asset(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_name=None, product_id=None):
+def create_asset(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_name=None,
+                 product_id=None):
     """
     Create a new Asset.
 
@@ -172,7 +192,8 @@ def create_asset(token, organization_context, business_unit_id=None, created_by_
     return response['data']
 
 
-def create_asset_version(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, asset_version_name=None, product_id=None):
+def create_asset_version(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None,
+                         asset_version_name=None, product_id=None):
     """
     Create a new Asset Version.
 
@@ -250,7 +271,10 @@ def create_asset_version(token, organization_context, business_unit_id=None, cre
     return response['data']
 
 
-def create_new_asset_version_artifact_and_test_for_upload(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, version=None, product_id=None, test_type=None, artifact_description=None, upload_method="API"):
+def create_new_asset_version_artifact_and_test_for_upload(token, organization_context, business_unit_id=None,
+                                                          created_by_user_id=None, asset_id=None, version=None,
+                                                          product_id=None, test_type=None, artifact_description=None,
+                                                          upload_method: UploadMethod = UploadMethod.API):
     """
     Creates the entities needed for uploading a file for Binary Analysis or test results from a third party scanner to an existing Asset. This will create a new Asset Version, Artifact, and Test.
     This method is used by the upload_file_for_binary_analysis and upload_test_results_file methods, which are generally easier to use for basic use cases.
@@ -274,8 +298,8 @@ def create_new_asset_version_artifact_and_test_for_upload(token, organization_co
             Test type to create the test for. Must be one of "finite_state_binary_analysis" or of the list of supported third party test types. For the full list, see the API documenation.
         artifact_description (str, optional):
             Description to use for the artifact. Examples inlcude "Firmware", "Source Code Repository". This will be appended to the default Artifact description. If none is provided, the default Artifact description will be used.
-        upload_method (str, optional):
-            The method of uploading the test results. Valid values are "WEB_APP_UI", "API", "GITHUB_INTEGRATION" and "AZURE_DEVOPS_INTEGRATION". Default is "API".
+        upload_method (UploadMethod, optional):
+            The method of uploading the test results. Default is UploadMethod.API.
 
 
     Raises:
@@ -316,7 +340,9 @@ def create_new_asset_version_artifact_and_test_for_upload(token, organization_co
             raise ValueError("Created By User ID is required and could not be retrieved from the existing asset")
 
     # create the asset version
-    response = create_asset_version(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, asset_version_name=version)
+    response = create_asset_version(token, organization_context, business_unit_id=business_unit_id,
+                                    created_by_user_id=created_by_user_id, asset_id=asset_id,
+                                    asset_version_name=version)
     # get the asset version ID
     asset_version_id = response['createAssetVersion']['id']
 
@@ -326,14 +352,19 @@ def create_new_asset_version_artifact_and_test_for_upload(token, organization_co
         if not artifact_description:
             artifact_description = "Binary"
         binary_artifact_name = f"{asset_name} {version} - {artifact_description}"
-        response = create_artifact(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_version_id=asset_version_id, artifact_name=binary_artifact_name, product_id=asset_product_ids)
+        response = create_artifact(token, organization_context, business_unit_id=business_unit_id,
+                                   created_by_user_id=created_by_user_id, asset_version_id=asset_version_id,
+                                   artifact_name=binary_artifact_name, product_id=asset_product_ids)
 
         # get the artifact ID
         binary_artifact_id = response['createArtifact']['id']
 
         # create the test
         test_name = f"{asset_name} {version} - Finite State Binary Analysis"
-        response = create_test_as_binary_analysis(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, artifact_id=binary_artifact_id, product_id=asset_product_ids, test_name=test_name, upload_method=upload_method)
+        response = create_test_as_binary_analysis(token, organization_context, business_unit_id=business_unit_id,
+                                                  created_by_user_id=created_by_user_id, asset_id=asset_id,
+                                                  artifact_id=binary_artifact_id, product_id=asset_product_ids,
+                                                  test_name=test_name, upload_method=upload_method)
         test_id = response['createTest']['id']
         return test_id
 
@@ -342,19 +373,28 @@ def create_new_asset_version_artifact_and_test_for_upload(token, organization_co
         if not artifact_description:
             artifact_description = "Unspecified Artifact"
         artifact_name = f"{asset_name} {version} - {artifact_description}"
-        response = create_artifact(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_version_id=asset_version_id, artifact_name=artifact_name, product_id=asset_product_ids)
+        response = create_artifact(token, organization_context, business_unit_id=business_unit_id,
+                                   created_by_user_id=created_by_user_id, asset_version_id=asset_version_id,
+                                   artifact_name=artifact_name, product_id=asset_product_ids)
 
         # get the artifact ID
         binary_artifact_id = response['createArtifact']['id']
 
         # create the test
         test_name = f"{asset_name} {version} - {test_type}"
-        response = create_test_as_third_party_scanner(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, artifact_id=binary_artifact_id, product_id=asset_product_ids, test_name=test_name, test_type=test_type, upload_method=upload_method)
+        response = create_test_as_third_party_scanner(token, organization_context, business_unit_id=business_unit_id,
+                                                      created_by_user_id=created_by_user_id, asset_id=asset_id,
+                                                      artifact_id=binary_artifact_id, product_id=asset_product_ids,
+                                                      test_name=test_name, test_type=test_type,
+                                                      upload_method=upload_method)
         test_id = response['createTest']['id']
         return test_id
 
 
-def create_new_asset_version_and_upload_binary(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, version=None, file_path=None, product_id=None, artifact_description=None, quick_scan=False, upload_method: str = "API"):
+def create_new_asset_version_and_upload_binary(token, organization_context, business_unit_id=None,
+                                               created_by_user_id=None, asset_id=None, version=None, file_path=None,
+                                               product_id=None, artifact_description=None, quick_scan=False,
+                                               upload_method: UploadMethod = UploadMethod.API):
     """
     Creates a new Asset Version for an existing asset, and uploads a binary file for Finite State Binary Analysis.
     By default, this uses the existing Business Unit and Created By User for the Asset. If you need to change these, you can provide the IDs for them.
@@ -380,8 +420,8 @@ def create_new_asset_version_and_upload_binary(token, organization_context, busi
             Description of the artifact. If not provided, the default is "Firmware Binary".
         quick_scan (bool, optional):
             If True, will upload the file for quick scan. Defaults to False (Full Scan). For details about Quick Scan vs Full Scan, please see the API documentation.
-        upload_method (str, optional):
-            The method of uploading the test results. Valid values are "WEB_APP_UI", "API", "GITHUB_INTEGRATION" and "AZURE_DEVOPS_INTEGRATION". Default "API".
+        upload_method (UploadMethod, optional):
+            The method of uploading the test results. Default is UploadMethod.API.
 
     Raises:
         ValueError: Raised if asset_id, version, or file_path are not provided.
@@ -400,14 +440,25 @@ def create_new_asset_version_and_upload_binary(token, organization_context, busi
     # create the asset version and binary test
     if not artifact_description:
         artifact_description = "Firmware Binary"
-    binary_test_id = create_new_asset_version_artifact_and_test_for_upload(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, version=version, product_id=product_id, test_type="finite_state_binary_analysis", artifact_description=artifact_description, upload_method=upload_method)
+    binary_test_id = create_new_asset_version_artifact_and_test_for_upload(token, organization_context,
+                                                                           business_unit_id=business_unit_id,
+                                                                           created_by_user_id=created_by_user_id,
+                                                                           asset_id=asset_id, version=version,
+                                                                           product_id=product_id,
+                                                                           test_type="finite_state_binary_analysis",
+                                                                           artifact_description=artifact_description,
+                                                                           upload_method=upload_method)
 
     # upload file for binary test
-    response = upload_file_for_binary_analysis(token, organization_context, test_id=binary_test_id, file_path=file_path, quick_scan=quick_scan)
+    response = upload_file_for_binary_analysis(token, organization_context, test_id=binary_test_id, file_path=file_path,
+                                               quick_scan=quick_scan)
     return response
 
 
-def create_new_asset_version_and_upload_test_results(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, version=None, file_path=None, product_id=None, test_type=None, artifact_description="", upload_method = "API"):
+def create_new_asset_version_and_upload_test_results(token, organization_context, business_unit_id=None,
+                                                     created_by_user_id=None, asset_id=None, version=None,
+                                                     file_path=None, product_id=None, test_type=None,
+                                                     artifact_description="", upload_method: UploadMethod = UploadMethod.API):
     """
     Creates a new Asset Version for an existing asset, and uploads test results for that asset version.
     By default, this uses the existing Business Unit and Created By User for the Asset. If you need to change these, you can provide the IDs for them.
@@ -433,8 +484,8 @@ def create_new_asset_version_and_upload_test_results(token, organization_context
             Test type. This must be one of the list of supported third party scanner types. For the full list of supported third party scanner types, see the Finite State API documentation.
         artifact_description (str, optional):
             Description of the artifact being scanned (e.g. "Source Code Repository", "Container Image"). If not provided, the default artifact description will be used.
-        upload_method (str, optional):
-            The method of uploading the test results. Valid values are "WEB_APP_UI", "API", "GITHUB_INTEGRATION" and "AZURE_DEVOPS_INTEGRATION". Default "API".
+        upload_method (UploadMethod, optional):
+            The method of uploading the test results. Default is UploadMethod.API.
 
     Raises:
         ValueError: If the asset_id, version, or file_path are not provided.
@@ -453,14 +504,21 @@ def create_new_asset_version_and_upload_test_results(token, organization_context
         raise ValueError("Test type is required")
 
     # create the asset version and test
-    test_id = create_new_asset_version_artifact_and_test_for_upload(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, version=version, product_id=product_id, test_type=test_type, artifact_description=artifact_description, upload_method=upload_method)
+    test_id = create_new_asset_version_artifact_and_test_for_upload(token, organization_context,
+                                                                    business_unit_id=business_unit_id,
+                                                                    created_by_user_id=created_by_user_id,
+                                                                    asset_id=asset_id, version=version,
+                                                                    product_id=product_id, test_type=test_type,
+                                                                    artifact_description=artifact_description,
+                                                                    upload_method=upload_method)
 
     # upload test results file
     response = upload_test_results_file(token, organization_context, test_id=test_id, file_path=file_path)
     return response
 
 
-def create_product(token, organization_context, business_unit_id=None, created_by_user_id=None, product_name=None, product_description=None, vendor_id=None, vendor_name=None):
+def create_product(token, organization_context, business_unit_id=None, created_by_user_id=None, product_name=None,
+                   product_description=None, vendor_id=None, vendor_name=None):
     """
     Create a new Product.
 
@@ -552,7 +610,8 @@ def create_product(token, organization_context, business_unit_id=None, created_b
     return response['data']
 
 
-def create_test(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, artifact_id=None, test_name=None, product_id=None, test_type=None, tools=[], upload_method=None):
+def create_test(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None,
+                artifact_id=None, test_name=None, product_id=None, test_type=None, tools=[], upload_method: UploadMethod = UploadMethod.API):
     """
     Create a new Test object for uploading files.
     This is an advanced method - you are probably looking for create_new_asset_version_and_upload_test_results or create_new_asset_version_and_upload_binary.
@@ -581,8 +640,8 @@ def create_test(token, organization_context, business_unit_id=None, created_by_u
             The type of test being created. Valid values are "cyclonedx" and "finite_state_binary_analysis".
         tools (list, optional):
             List of Tool objects used to perform the test. Each Tool object is a dict that should have a "name" and "description" field. This is used to describe the actual scanner that was used to perform the test.
-        upload_method (str, optional):
-            The method of uploading the test results. Valid values are "WEB_APP_UI", "API", "GITHUB_INTEGRATION" and "AZURE_DEVOPS_INTEGRATION".
+        upload_method (UploadMethod, required):
+            The method of uploading the test results.
 
     Raises:
         ValueError: Raised if business_unit_id, created_by_user_id, asset_id, artifact_id, test_name, or test_type are not provided.
@@ -603,6 +662,8 @@ def create_test(token, organization_context, business_unit_id=None, created_by_u
         raise ValueError("Test name is required")
     if not test_type:
         raise ValueError("Test type is required")
+    if not upload_method:
+        raise ValueError("Upload method is required")
 
     graphql_query = '''
     mutation CreateTestMutation($input: CreateTestInput!) {
@@ -651,7 +712,7 @@ def create_test(token, organization_context, business_unit_id=None, created_by_u
                 "businessUnits": [business_unit_id]
             },
             "tools": tools,
-            "uploadMethod": upload_method
+            "uploadMethod": upload_method.value
         }
     }
 
@@ -662,7 +723,9 @@ def create_test(token, organization_context, business_unit_id=None, created_by_u
     return response['data']
 
 
-def create_test_as_binary_analysis(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, artifact_id=None, test_name=None, product_id=None, upload_method="API"):
+def create_test_as_binary_analysis(token, organization_context, business_unit_id=None, created_by_user_id=None,
+                                   asset_id=None, artifact_id=None, test_name=None, product_id=None,
+                                   upload_method: UploadMethod = UploadMethod.API):
     """
     Create a new Test object for uploading files for Finite State Binary Analysis.
 
@@ -683,8 +746,8 @@ def create_test_as_binary_analysis(token, organization_context, business_unit_id
             The name of the Test being created.
         product_id (str, optional):
             Product ID to associate the Test with. If not specified, the Test will not be associated with a product.
-        upload_method (str, optional):
-            The method of uploading the test results. Valid values are "WEB_APP_UI", "API", "GITHUB_INTEGRATION" and "AZURE_DEVOPS_INTEGRATION". Default is "API".
+        upload_method (UploadMethod, optional):
+            The method of uploading the test results. Default is UploadMethod.API.
 
     Raises:
         ValueError: Raised if business_unit_id, created_by_user_id, asset_id, artifact_id, or test_name are not provided.
@@ -699,10 +762,14 @@ def create_test_as_binary_analysis(token, organization_context, business_unit_id
             "name": "Finite State Binary Analysis"
         }
     ]
-    return create_test(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, artifact_id=artifact_id, test_name=test_name, product_id=product_id, test_type="finite_state_binary_analysis", tools=tools, upload_method=upload_method)
+    return create_test(token, organization_context, business_unit_id=business_unit_id,
+                       created_by_user_id=created_by_user_id, asset_id=asset_id, artifact_id=artifact_id,
+                       test_name=test_name, product_id=product_id, test_type="finite_state_binary_analysis",
+                       tools=tools, upload_method=upload_method)
 
 
-def create_test_as_cyclone_dx(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, artifact_id=None, test_name=None, product_id=None, upload_method="API"):
+def create_test_as_cyclone_dx(token, organization_context, business_unit_id=None, created_by_user_id=None,
+                              asset_id=None, artifact_id=None, test_name=None, product_id=None, upload_method: UploadMethod = UploadMethod.API):
     """
     Create a new Test object for uploading CycloneDX files.
 
@@ -723,8 +790,8 @@ def create_test_as_cyclone_dx(token, organization_context, business_unit_id=None
             The name of the Test being created.
         product_id (str, optional):
             Product ID to associate the Test with. If not specified, the Test will not be associated with a product.
-        upload_method (str, optional):
-            The method of uploading the test results. Valid values are "WEB_APP_UI", "API", "GITHUB_INTEGRATION" and "AZURE_DEVOPS_INTEGRATION". Default is "API".
+        upload_method (UploadMethod, optional):
+            The method of uploading the test results. Default is UploadMethod.API.
 
     Raises:
         ValueError: Raised if business_unit_id, created_by_user_id, asset_id, artifact_id, or test_name are not provided.
@@ -733,10 +800,14 @@ def create_test_as_cyclone_dx(token, organization_context, business_unit_id=None
     Returns:
         dict: createTest Object
     """
-    return create_test(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, artifact_id=artifact_id, test_name=test_name, product_id=product_id, test_type="cyclonedx", upload_method=upload_method)
+    return create_test(token, organization_context, business_unit_id=business_unit_id,
+                       created_by_user_id=created_by_user_id, asset_id=asset_id, artifact_id=artifact_id,
+                       test_name=test_name, product_id=product_id, test_type="cyclonedx", upload_method=upload_method)
 
 
-def create_test_as_third_party_scanner(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, artifact_id=None, test_name=None, product_id=None, test_type=None, upload_method=None):
+def create_test_as_third_party_scanner(token, organization_context, business_unit_id=None, created_by_user_id=None,
+                                       asset_id=None, artifact_id=None, test_name=None, product_id=None, test_type=None,
+                                       upload_method: UploadMethod = UploadMethod.API):
     """
     Create a new Test object for uploading Third Party Scanner files.
 
@@ -759,8 +830,8 @@ def create_test_as_third_party_scanner(token, organization_context, business_uni
             Product ID to associate the Test with. If not specified, the Test will not be associated with a product.
         test_type (str, required):
             Test type of the scanner which indicates the output file format from the scanner. Valid values are "cyclonedx" and others. For the full list see the API documentation.
-        upload_method (str, optional):
-            The method of uploading the test results. Valid values are "WEB_APP_UI", "API", "GITHUB_INTEGRATION" and "AZURE_DEVOPS_INTEGRATION".
+        upload_method (UploadMethod, optional):
+            The method of uploading the test results. Default is UploadMethod.API.
 
     Raises:
         ValueError: Raised if business_unit_id, created_by_user_id, asset_id, artifact_id, or test_name are not provided.
@@ -769,10 +840,13 @@ def create_test_as_third_party_scanner(token, organization_context, business_uni
     Returns:
         dict: createTest Object
     """
-    return create_test(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, artifact_id=artifact_id, test_name=test_name, product_id=product_id, test_type=test_type, upload_method=upload_method)
+    return create_test(token, organization_context, business_unit_id=business_unit_id,
+                       created_by_user_id=created_by_user_id, asset_id=asset_id, artifact_id=artifact_id,
+                       test_name=test_name, product_id=product_id, test_type=test_type, upload_method=upload_method)
 
 
-def download_asset_version_report(token, organization_context, asset_version_id=None, report_type=None, report_subtype=None, output_filename=None, verbose=False):
+def download_asset_version_report(token, organization_context, asset_version_id=None, report_type=None,
+                                  report_subtype=None, output_filename=None, verbose=False):
     """
     Download a report for a specific asset version and save it to a local file. This is a blocking call, and can sometimes take minutes to return if the report is very large.
 
@@ -801,7 +875,8 @@ def download_asset_version_report(token, organization_context, asset_version_id=
     Returns:
         None
     """
-    url = generate_report_download_url(token, organization_context, asset_version_id=asset_version_id, report_type=report_type, report_subtype=report_subtype, verbose=verbose)
+    url = generate_report_download_url(token, organization_context, asset_version_id=asset_version_id,
+                                       report_type=report_type, report_subtype=report_subtype, verbose=verbose)
 
     # Send an HTTP GET request to the URL
     response = requests.get(url)
@@ -819,7 +894,8 @@ def download_asset_version_report(token, organization_context, asset_version_id=
         raise Exception(f"Failed to download the file. Status code: {response.status_code}")
 
 
-def download_product_report(token, organization_context, product_id=None, report_type=None, report_subtype=None, output_filename=None, verbose=False):
+def download_product_report(token, organization_context, product_id=None, report_type=None, report_subtype=None,
+                            output_filename=None, verbose=False):
     """
     Download a report for a specific product and save it to a local file. This is a blocking call, and can sometimes take minutes to return if the report is very large.
 
@@ -840,7 +916,8 @@ def download_product_report(token, organization_context, product_id=None, report
         verbose (bool, optional):
             If True, will print additional information to the console. Defaults to False.
     """
-    url = generate_report_download_url(token, organization_context, product_id=product_id, report_type=report_type, report_subtype=report_subtype, verbose=verbose)
+    url = generate_report_download_url(token, organization_context, product_id=product_id, report_type=report_type,
+                                       report_subtype=report_subtype, verbose=verbose)
 
     # Send an HTTP GET request to the URL
     response = requests.get(url)
@@ -858,7 +935,8 @@ def download_product_report(token, organization_context, product_id=None, report
         raise Exception(f"Failed to download the file. Status code: {response.status_code}")
 
 
-def download_sbom(token, organization_context, sbom_type="CYCLONEDX", sbom_subtype="SBOM_ONLY", asset_version_id=None, output_filename="sbom.json", verbose=False):
+def download_sbom(token, organization_context, sbom_type="CYCLONEDX", sbom_subtype="SBOM_ONLY", asset_version_id=None,
+                  output_filename="sbom.json", verbose=False):
     """
     Download an SBOM for an Asset Version and save it to a local file. This is a blocking call, and can sometimes take minutes to return if the SBOM is very large.
 
@@ -885,7 +963,8 @@ def download_sbom(token, organization_context, sbom_type="CYCLONEDX", sbom_subty
     Returns:
         None
     """
-    url = generate_sbom_download_url(token, organization_context, sbom_type=sbom_type, sbom_subtype=sbom_subtype, asset_version_id=asset_version_id, verbose=verbose)
+    url = generate_sbom_download_url(token, organization_context, sbom_type=sbom_type, sbom_subtype=sbom_subtype,
+                                     asset_version_id=asset_version_id, verbose=verbose)
 
     # Send an HTTP GET request to the URL
     response = requests.get(url)
@@ -948,7 +1027,8 @@ def get_all_artifacts(token, organization_context, artifact_id=None, business_un
     Returns:
         list: List of Artifact Objects
     """
-    return get_all_paginated_results(token, organization_context, queries.ALL_ARTIFACTS['query'], queries.ALL_ARTIFACTS['variables'](artifact_id, business_unit_id), 'allAssets')
+    return get_all_paginated_results(token, organization_context, queries.ALL_ARTIFACTS['query'],
+                                     queries.ALL_ARTIFACTS['variables'](artifact_id, business_unit_id), 'allAssets')
 
 
 def get_all_assets(token, organization_context, asset_id=None, business_unit_id=None):
@@ -971,7 +1051,8 @@ def get_all_assets(token, organization_context, asset_id=None, business_unit_id=
     Returns:
         list: List of Asset Objects
     """
-    return get_all_paginated_results(token, organization_context, queries.ALL_ASSETS['query'], queries.ALL_ASSETS['variables'](asset_id, business_unit_id), 'allAssets')
+    return get_all_paginated_results(token, organization_context, queries.ALL_ASSETS['query'],
+                                     queries.ALL_ASSETS['variables'](asset_id, business_unit_id), 'allAssets')
 
 
 def get_all_asset_versions(token, organization_context):
@@ -990,7 +1071,8 @@ def get_all_asset_versions(token, organization_context):
     Returns:
         list: List of AssetVersion Objects
     """
-    return get_all_paginated_results(token, organization_context, queries.ALL_ASSET_VERSIONS['query'], queries.ALL_ASSET_VERSIONS['variables'], 'allAssetVersions')
+    return get_all_paginated_results(token, organization_context, queries.ALL_ASSET_VERSIONS['query'],
+                                     queries.ALL_ASSET_VERSIONS['variables'], 'allAssetVersions')
 
 
 def get_all_asset_versions_for_product(token, organization_context, product_id):
@@ -1008,7 +1090,8 @@ def get_all_asset_versions_for_product(token, organization_context, product_id):
     Returns:
         list: List of AssetVersion Objects
     """
-    return get_all_paginated_results(token, organization_context, queries.ONE_PRODUCT_ALL_ASSET_VERSIONS['query'], queries.ONE_PRODUCT_ALL_ASSET_VERSIONS['variables'](product_id), 'allProducts')
+    return get_all_paginated_results(token, organization_context, queries.ONE_PRODUCT_ALL_ASSET_VERSIONS['query'],
+                                     queries.ONE_PRODUCT_ALL_ASSET_VERSIONS['variables'](product_id), 'allProducts')
 
 
 def get_all_business_units(token, organization_context):
@@ -1027,7 +1110,8 @@ def get_all_business_units(token, organization_context):
     Returns:
         list: List of Group Objects
     """
-    return get_all_paginated_results(token, organization_context, queries.ALL_BUSINESS_UNITS['query'], queries.ALL_BUSINESS_UNITS['variables'], 'allGroups')
+    return get_all_paginated_results(token, organization_context, queries.ALL_BUSINESS_UNITS['query'],
+                                     queries.ALL_BUSINESS_UNITS['variables'], 'allGroups')
 
 
 def get_all_organizations(token, organization_context):
@@ -1046,7 +1130,8 @@ def get_all_organizations(token, organization_context):
     Returns:
         list: List of Organization Objects
     """
-    return get_all_paginated_results(token, organization_context, queries.ALL_ORGANIZATIONS['query'], queries.ALL_ORGANIZATIONS['variables'], 'allOrganizations')
+    return get_all_paginated_results(token, organization_context, queries.ALL_ORGANIZATIONS['query'],
+                                     queries.ALL_ORGANIZATIONS['variables'], 'allOrganizations')
 
 
 def get_all_paginated_results(token, organization_context, query, variables=None, field=None, limit=None):
@@ -1136,7 +1221,8 @@ def get_all_products(token, organization_context):
     .. deprecated:: 0.1.4. Use get_products instead.
     """
     warn('`get_all_products` is deprecated. Use: `get_products instead`', DeprecationWarning, stacklevel=2)
-    return get_all_paginated_results(token, organization_context, queries.ALL_PRODUCTS['query'], queries.ALL_PRODUCTS['variables'], 'allProducts')
+    return get_all_paginated_results(token, organization_context, queries.ALL_PRODUCTS['query'],
+                                     queries.ALL_PRODUCTS['variables'], 'allProducts')
 
 
 def get_all_users(token, organization_context):
@@ -1155,7 +1241,8 @@ def get_all_users(token, organization_context):
     Returns:
         list: List of User Objects
     """
-    return get_all_paginated_results(token, organization_context, queries.ALL_USERS['query'], queries.ALL_USERS['variables'], 'allUsers')
+    return get_all_paginated_results(token, organization_context, queries.ALL_USERS['query'],
+                                     queries.ALL_USERS['variables'], 'allUsers')
 
 
 def get_artifact_context(token, organization_context, artifact_id):
@@ -1174,7 +1261,8 @@ def get_artifact_context(token, organization_context, artifact_id):
     Returns:
         dict: Artifact Context Object
     """
-    artifact = get_all_paginated_results(token, organization_context, queries.ALL_ARTIFACTS['query'], queries.ALL_ARTIFACTS['variables'](artifact_id, None), 'allAssets')
+    artifact = get_all_paginated_results(token, organization_context, queries.ALL_ARTIFACTS['query'],
+                                         queries.ALL_ARTIFACTS['variables'](artifact_id, None), 'allAssets')
 
     return artifact[0]['ctx']
 
@@ -1199,7 +1287,8 @@ def get_assets(token, organization_context, asset_id=None, business_unit_id=None
     Returns:
         list: List of Asset Objects
     """
-    return get_all_paginated_results(token, organization_context, queries.ALL_ASSETS['query'], queries.ALL_ASSETS['variables'](asset_id, business_unit_id), 'allAssets')
+    return get_all_paginated_results(token, organization_context, queries.ALL_ASSETS['query'],
+                                     queries.ALL_ASSETS['variables'](asset_id, business_unit_id), 'allAssets')
 
 
 def get_asset_versions(token, organization_context, asset_version_id=None, asset_id=None, business_unit_id=None):
@@ -1224,7 +1313,11 @@ def get_asset_versions(token, organization_context, asset_version_id=None, asset
     Returns:
         list: List of AssetVersion Objects
     """
-    return get_all_paginated_results(token, organization_context, queries.ALL_ASSET_VERSIONS['query'], queries.ALL_ASSET_VERSIONS['variables'](asset_version_id=asset_version_id, asset_id=asset_id, business_unit_id=business_unit_id), 'allAssetVersions')
+    return get_all_paginated_results(token, organization_context, queries.ALL_ASSET_VERSIONS['query'],
+                                     queries.ALL_ASSET_VERSIONS['variables'](asset_version_id=asset_version_id,
+                                                                             asset_id=asset_id,
+                                                                             business_unit_id=business_unit_id),
+                                     'allAssetVersions')
 
 
 def get_auth_token(client_id, client_secret, token_url=TOKEN_URL, audience=AUDIENCE):
@@ -1267,7 +1360,8 @@ def get_auth_token(client_id, client_secret, token_url=TOKEN_URL, audience=AUDIE
     return auth_token
 
 
-def get_findings(token, organization_context, asset_version_id=None, finding_id=None, category=None, status=None, severity=None, count=False, limit=None):
+def get_findings(token, organization_context, asset_version_id=None, finding_id=None, category=None, status=None,
+                 severity=None, count=False, limit=None):
     """
     Gets all the Findings for an Asset Version. Uses pagination to get all results.
     Args:
@@ -1299,9 +1393,17 @@ def get_findings(token, organization_context, asset_version_id=None, finding_id=
     """
 
     if count:
-        return send_graphql_query(token, organization_context, queries.GET_FINDINGS_COUNT['query'], queries.GET_FINDINGS_COUNT['variables'](asset_version_id=asset_version_id, finding_id=finding_id, category=category, status=status, severity=severity, limit=limit))["data"]["_allFindingsMeta"]
+        return send_graphql_query(token, organization_context, queries.GET_FINDINGS_COUNT['query'],
+                                  queries.GET_FINDINGS_COUNT['variables'](asset_version_id=asset_version_id,
+                                                                          finding_id=finding_id, category=category,
+                                                                          status=status, severity=severity,
+                                                                          limit=limit))["data"]["_allFindingsMeta"]
     else:
-        return get_all_paginated_results(token, organization_context, queries.GET_FINDINGS['query'], queries.GET_FINDINGS['variables'](asset_version_id=asset_version_id, finding_id=finding_id, category=category, status=status, severity=severity, limit=limit), 'allFindings', limit=limit)
+        return get_all_paginated_results(token, organization_context, queries.GET_FINDINGS['query'],
+                                         queries.GET_FINDINGS['variables'](asset_version_id=asset_version_id,
+                                                                           finding_id=finding_id, category=category,
+                                                                           status=status, severity=severity,
+                                                                           limit=limit), 'allFindings', limit=limit)
 
 
 def get_product_asset_versions(token, organization_context, product_id=None):
@@ -1322,7 +1424,8 @@ def get_product_asset_versions(token, organization_context, product_id=None):
     if not product_id:
         raise Exception("Product ID is required")
 
-    return get_all_paginated_results(token, organization_context, queries.GET_PRODUCT_ASSET_VERSIONS['query'], queries.GET_PRODUCT_ASSET_VERSIONS['variables'](product_id), 'allProducts')
+    return get_all_paginated_results(token, organization_context, queries.GET_PRODUCT_ASSET_VERSIONS['query'],
+                                     queries.GET_PRODUCT_ASSET_VERSIONS['variables'](product_id), 'allProducts')
 
 
 def get_products(token, organization_context, product_id=None, business_unit_id=None) -> list:
@@ -1343,10 +1446,14 @@ def get_products(token, organization_context, product_id=None, business_unit_id=
         list: List of Product Objects
     """
 
-    return get_all_paginated_results(token, organization_context, queries.GET_PRODUCTS['query'], queries.GET_PRODUCTS['variables'](product_id=product_id, business_unit_id=business_unit_id), 'allProducts')
+    return get_all_paginated_results(token, organization_context, queries.GET_PRODUCTS['query'],
+                                     queries.GET_PRODUCTS['variables'](product_id=product_id,
+                                                                       business_unit_id=business_unit_id),
+                                     'allProducts')
 
 
-def generate_report_download_url(token, organization_context, asset_version_id=None, product_id=None, report_type=None, report_subtype=None, verbose=False) -> str:
+def generate_report_download_url(token, organization_context, asset_version_id=None, product_id=None, report_type=None,
+                                 report_subtype=None, verbose=False) -> str:
     """
     Blocking call: Initiates generation of a report, and returns a pre-signed URL for downloading the report.
     This may take several minutes to complete, depending on the size of the report.
@@ -1386,8 +1493,10 @@ def generate_report_download_url(token, organization_context, asset_version_id=N
         if report_subtype not in ["ALL_FINDINGS", "ALL_COMPONENTS", "EXPLOIT_INTELLIGENCE"]:
             raise Exception(f"Report Subtype {report_subtype} not supported")
 
-        mutation = queries.LAUNCH_REPORT_EXPORT['mutation'](asset_version_id=asset_version_id, product_id=product_id, report_type=report_type, report_subtype=report_subtype)
-        variables = queries.LAUNCH_REPORT_EXPORT['variables'](asset_version_id=asset_version_id, product_id=product_id, report_type=report_type, report_subtype=report_subtype)
+        mutation = queries.LAUNCH_REPORT_EXPORT['mutation'](asset_version_id=asset_version_id, product_id=product_id,
+                                                            report_type=report_type, report_subtype=report_subtype)
+        variables = queries.LAUNCH_REPORT_EXPORT['variables'](asset_version_id=asset_version_id, product_id=product_id,
+                                                              report_type=report_type, report_subtype=report_subtype)
 
         response_data = send_graphql_query(token, organization_context, mutation, variables)
         if verbose:
@@ -1399,7 +1508,8 @@ def generate_report_download_url(token, organization_context, asset_version_id=N
         elif product_id:
             export_job_id = response_data['data']['launchProductCSVExport']['exportJobId']
         else:
-            raise Exception("Error: Export Job ID not found - this should not happen, please contact your Finite State representative")
+            raise Exception(
+                "Error: Export Job ID not found - this should not happen, please contact your Finite State representative")
 
         if verbose:
             print(f'Export Job ID: {export_job_id}')
@@ -1408,8 +1518,10 @@ def generate_report_download_url(token, organization_context, asset_version_id=N
         if report_subtype not in ["RISK_SUMMARY"]:
             raise Exception(f"Report Subtype {report_subtype} not supported")
 
-        mutation = queries.LAUNCH_REPORT_EXPORT['mutation'](asset_version_id=asset_version_id, product_id=product_id, report_type=report_type, report_subtype=report_subtype)
-        variables = queries.LAUNCH_REPORT_EXPORT['variables'](asset_version_id=asset_version_id, product_id=product_id, report_type=report_type, report_subtype=report_subtype)
+        mutation = queries.LAUNCH_REPORT_EXPORT['mutation'](asset_version_id=asset_version_id, product_id=product_id,
+                                                            report_type=report_type, report_subtype=report_subtype)
+        variables = queries.LAUNCH_REPORT_EXPORT['variables'](asset_version_id=asset_version_id, product_id=product_id,
+                                                              report_type=report_type, report_subtype=report_subtype)
 
         response_data = send_graphql_query(token, organization_context, mutation, variables)
         if verbose:
@@ -1421,13 +1533,15 @@ def generate_report_download_url(token, organization_context, asset_version_id=N
         elif product_id:
             export_job_id = response_data['data']['launchProductPdfExport']['exportJobId']
         else:
-            raise Exception("Error: Export Job ID not found - this should not happen, please contact your Finite State representative")
+            raise Exception(
+                "Error: Export Job ID not found - this should not happen, please contact your Finite State representative")
 
         if verbose:
             print(f'Export Job ID: {export_job_id}')
 
     if not export_job_id:
-        raise Exception("Error: Export Job ID not found - this should not happen, please contact your Finite State representative")
+        raise Exception(
+            "Error: Export Job ID not found - this should not happen, please contact your Finite State representative")
 
     # poll the API until the export job is complete
     sleep_time = 10
@@ -1452,11 +1566,13 @@ def generate_report_download_url(token, organization_context, asset_version_id=N
         if response_data['data']['generateExportDownloadPresignedUrl']['status'] == 'COMPLETED':
             if response_data['data']['generateExportDownloadPresignedUrl']['downloadLink']:
                 if verbose:
-                    print(f'Export Job Complete. Download URL: {response_data["data"]["generateExportDownloadPresignedUrl"]["downloadLink"]}')
+                    print(
+                        f'Export Job Complete. Download URL: {response_data["data"]["generateExportDownloadPresignedUrl"]["downloadLink"]}')
                 return response_data['data']['generateExportDownloadPresignedUrl']['downloadLink']
 
 
-def generate_sbom_download_url(token, organization_context, sbom_type=None, sbom_subtype=None, asset_version_id=None, verbose=False) -> str:
+def generate_sbom_download_url(token, organization_context, sbom_type=None, sbom_subtype=None, asset_version_id=None,
+                               verbose=False) -> str:
     """
     Blocking call: Initiates generation of an SBOM for the asset_version_id, and return a pre-signed URL for downloading the SBOM.
     This may take several minutes to complete, depending on the size of SBOM.
@@ -1526,7 +1642,8 @@ def generate_sbom_download_url(token, organization_context, sbom_type=None, sbom
             print(f'Export Job ID: {export_job_id}')
 
     if not export_job_id:
-        raise Exception("Error: Export Job ID not found - this should not happen, please contact your Finite State representative")
+        raise Exception(
+            "Error: Export Job ID not found - this should not happen, please contact your Finite State representative")
 
     # poll the API until the export job is complete
     sleep_time = 10
@@ -1550,7 +1667,8 @@ def generate_sbom_download_url(token, organization_context, sbom_type=None, sbom
         if response_data['data']['generateExportDownloadPresignedUrl']['status'] == "COMPLETED":
             if response_data['data']['generateExportDownloadPresignedUrl']['downloadLink']:
                 if verbose:
-                    print(f'Export Job Complete. Download URL: {response_data["data"]["generateExportDownloadPresignedUrl"]["downloadLink"]}')
+                    print(
+                        f'Export Job Complete. Download URL: {response_data["data"]["generateExportDownloadPresignedUrl"]["downloadLink"]}')
                 return response_data['data']['generateExportDownloadPresignedUrl']['downloadLink']
 
 
@@ -1574,10 +1692,14 @@ def get_software_components(token, organization_context, asset_version_id=None, 
     if not asset_version_id:
         raise Exception("Asset Version ID is required")
 
-    return get_all_paginated_results(token, organization_context, queries.GET_SOFTWARE_COMPONENTS['query'], queries.GET_SOFTWARE_COMPONENTS['variables'](asset_version_id=asset_version_id, type=type), 'allSoftwareComponentInstances')
+    return get_all_paginated_results(token, organization_context, queries.GET_SOFTWARE_COMPONENTS['query'],
+                                     queries.GET_SOFTWARE_COMPONENTS['variables'](asset_version_id=asset_version_id,
+                                                                                  type=type),
+                                     'allSoftwareComponentInstances')
 
 
-def search_sbom(token, organization_context, name=None, version=None, asset_version_id=None, search_method='EXACT', case_sensitive=False) -> list:
+def search_sbom(token, organization_context, name=None, version=None, asset_version_id=None, search_method='EXACT',
+                case_sensitive=False) -> list:
     """
     Searches the SBOM of a specific asset version or the entire organization for matching software components.
     Search Methods: EXACT or CONTAINS
@@ -1683,7 +1805,8 @@ query GetSoftwareComponentInstances(
         elif search_method == 'CONTAINS':
             variables["filter"]["version_contains"] = version
 
-    records = get_all_paginated_results(token, organization_context, query, variables=variables, field="allSoftwareComponentInstances")
+    records = get_all_paginated_results(token, organization_context, query, variables=variables,
+                                        field="allSoftwareComponentInstances")
 
     return records
 
@@ -1731,7 +1854,8 @@ def send_graphql_query(token, organization_context, query, variables=None):
         raise Exception(f"Error: {response.status_code} - {response.text}")
 
 
-def update_finding_statuses(token, organization_context, user_id=None, finding_ids=None, status=None, justification=None, response=None, comment=None):
+def update_finding_statuses(token, organization_context, user_id=None, finding_ids=None, status=None,
+                            justification=None, response=None, comment=None):
     """
     Updates the status of a findings or multiple findings. This is a blocking call.
 
@@ -1768,12 +1892,15 @@ def update_finding_statuses(token, organization_context, user_id=None, finding_i
         raise ValueError("Status is required")
 
     mutation = queries.UPDATE_FINDING_STATUSES['mutation']
-    variables = queries.UPDATE_FINDING_STATUSES['variables'](user_id=user_id, finding_ids=finding_ids, status=status, justification=justification, response=response, comment=comment)
+    variables = queries.UPDATE_FINDING_STATUSES['variables'](user_id=user_id, finding_ids=finding_ids, status=status,
+                                                             justification=justification, response=response,
+                                                             comment=comment)
 
     return send_graphql_query(token, organization_context, mutation, variables)
 
 
-def upload_file_for_binary_analysis(token, organization_context, test_id=None, file_path=None, chunk_size=1024 * 1024 * 1024 * 5, quick_scan=False):
+def upload_file_for_binary_analysis(token, organization_context, test_id=None, file_path=None,
+                                    chunk_size=1024 * 1024 * 1024 * 5, quick_scan=False):
     """
     Upload a file for Binary Analysis. Will automatically chunk the file into chunks and upload each chunk. Chunk size defaults to 5GB.
     NOTE: This is NOT for uploading third party scanner results. Use upload_test_results_file for that.
