@@ -349,7 +349,7 @@ def create_new_asset_version_artifact_and_test_for_upload(token, organization_co
 
         # create the test
         test_name = f"{asset_name} {version} - {test_type}"
-        response = create_test_as_third_party_scanner(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, artifact_id=binary_artifact_id, product_id=asset_product_ids, test_name=test_name, test_type=test_type)
+        response = create_test_as_third_party_scanner(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, artifact_id=binary_artifact_id, product_id=asset_product_ids, test_name=test_name, test_type=test_type, upload_method=upload_method)
         test_id = response['createTest']['id']
         return test_id
 
@@ -660,7 +660,7 @@ def create_test(token, organization_context, business_unit_id=None, created_by_u
     return response['data']
 
 
-def create_test_as_binary_analysis(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, artifact_id=None, test_name=None, product_id=None, upload_method=None):
+def create_test_as_binary_analysis(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, artifact_id=None, test_name=None, product_id=None, upload_method="API"):
     """
     Create a new Test object for uploading files for Finite State Binary Analysis.
 
@@ -682,7 +682,7 @@ def create_test_as_binary_analysis(token, organization_context, business_unit_id
         product_id (str, optional):
             Product ID to associate the Test with. If not specified, the Test will not be associated with a product.
         upload_method (str, optional):
-            The method of uploading the test results. Valid values are "WEB_APP_UI", "API", "GITHUB_INTEGRATION" and "AZURE_DEVOPS_INTEGRATION".
+            The method of uploading the test results. Valid values are "WEB_APP_UI", "API", "GITHUB_INTEGRATION" and "AZURE_DEVOPS_INTEGRATION". Default is "API".
 
     Raises:
         ValueError: Raised if business_unit_id, created_by_user_id, asset_id, artifact_id, or test_name are not provided.
@@ -700,7 +700,7 @@ def create_test_as_binary_analysis(token, organization_context, business_unit_id
     return create_test(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, artifact_id=artifact_id, test_name=test_name, product_id=product_id, test_type="finite_state_binary_analysis", tools=tools, upload_method=upload_method)
 
 
-def create_test_as_cyclone_dx(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, artifact_id=None, test_name=None, product_id=None):
+def create_test_as_cyclone_dx(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, artifact_id=None, test_name=None, product_id=None, upload_method="API"):
     """
     Create a new Test object for uploading CycloneDX files.
 
@@ -721,6 +721,8 @@ def create_test_as_cyclone_dx(token, organization_context, business_unit_id=None
             The name of the Test being created.
         product_id (str, optional):
             Product ID to associate the Test with. If not specified, the Test will not be associated with a product.
+        upload_method (str, optional):
+            The method of uploading the test results. Valid values are "WEB_APP_UI", "API", "GITHUB_INTEGRATION" and "AZURE_DEVOPS_INTEGRATION". Default is "API".
 
     Raises:
         ValueError: Raised if business_unit_id, created_by_user_id, asset_id, artifact_id, or test_name are not provided.
@@ -729,10 +731,10 @@ def create_test_as_cyclone_dx(token, organization_context, business_unit_id=None
     Returns:
         dict: createTest Object
     """
-    return create_test(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, artifact_id=artifact_id, test_name=test_name, product_id=product_id, test_type="cyclonedx")
+    return create_test(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, artifact_id=artifact_id, test_name=test_name, product_id=product_id, test_type="cyclonedx", upload_method=upload_method)
 
 
-def create_test_as_third_party_scanner(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, artifact_id=None, test_name=None, product_id=None, test_type=None):
+def create_test_as_third_party_scanner(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None, artifact_id=None, test_name=None, product_id=None, test_type=None, upload_method=None):
     """
     Create a new Test object for uploading Third Party Scanner files.
 
@@ -755,6 +757,8 @@ def create_test_as_third_party_scanner(token, organization_context, business_uni
             Product ID to associate the Test with. If not specified, the Test will not be associated with a product.
         test_type (str, required):
             Test type of the scanner which indicates the output file format from the scanner. Valid values are "cyclonedx" and others. For the full list see the API documentation.
+        upload_method (str, optional):
+            The method of uploading the test results. Valid values are "WEB_APP_UI", "API", "GITHUB_INTEGRATION" and "AZURE_DEVOPS_INTEGRATION".
 
     Raises:
         ValueError: Raised if business_unit_id, created_by_user_id, asset_id, artifact_id, or test_name are not provided.
@@ -763,7 +767,7 @@ def create_test_as_third_party_scanner(token, organization_context, business_uni
     Returns:
         dict: createTest Object
     """
-    return create_test(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, artifact_id=artifact_id, test_name=test_name, product_id=product_id, test_type=test_type)
+    return create_test(token, organization_context, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, artifact_id=artifact_id, test_name=test_name, product_id=product_id, test_type=test_type, upload_method=upload_method)
 
 
 def download_asset_version_report(token, organization_context, asset_version_id=None, report_type=None, report_subtype=None, output_filename=None, verbose=False):
