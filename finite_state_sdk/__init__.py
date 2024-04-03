@@ -20,6 +20,8 @@ class UploadMethod(Enum):
         API: Upload method via API.
         GITHUB_INTEGRATION: Upload method via GitHub integration.
         AZURE_DEVOPS_INTEGRATION: Upload method via Azure DevOps integration.
+
+    To use any value from this enumeration, use UploadMethod.<attribute> i.e. finite_state_sdk.UploadMethod.WEB_APP_UI
     """
     WEB_APP_UI = "WEB_APP_UI"
     API = "API"
