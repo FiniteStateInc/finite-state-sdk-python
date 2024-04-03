@@ -99,7 +99,7 @@ version_name = ""  # CHANGEME: Name of the version you are uploading (e.g. 1.0, 
 # upload the test results
 # NOTE: you must specify the test result file type
 # In this case we are uploading a CycloneDX SBOM, so we use the value "cyclonedx"
-response = finite_state_sdk.create_new_asset_version_and_upload_test_results(token, ORGANIZATION_CONTEXT, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, version=version_name, file_path=file_path, product_id=None, artifact_description="Source Code Repository", test_type="cyclonedx")
+response = finite_state_sdk.create_new_asset_version_and_upload_test_results(token, ORGANIZATION_CONTEXT, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, version=version_name, file_path=file_path, product_id=None, artifact_description="Source Code Repository", test_type="cyclonedx", upload_method=finite_state_sdk.UploadMethod.API)
 print("Uploaded the test results:")
 print(json.dumps(response, indent=4))
 
