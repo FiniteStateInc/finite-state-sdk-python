@@ -29,8 +29,15 @@ class UploadMethod(Enum):
     AZURE_DEVOPS_INTEGRATION = "AZURE_DEVOPS_INTEGRATION"
 
 
-def create_artifact(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_version_id=None,
-                    artifact_name=None, product_id=None):
+def create_artifact(
+    token,
+    organization_context,
+    business_unit_id=None,
+    created_by_user_id=None,
+    asset_version_id=None,
+    artifact_name=None,
+    product_id=None,
+):
     """
     Create a new Artifact.
     This is an advanced method - you are probably looking for create_new_asset_version_and_upload_test_results or create_new_asset_version_and_upload_binary.
@@ -116,8 +123,7 @@ def create_artifact(token, organization_context, business_unit_id=None, created_
     return response['data']
 
 
-def create_asset(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_name=None,
-                 product_id=None):
+def create_asset(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_name=None, product_id=None):
     """
     Create a new Asset.
 
@@ -194,8 +200,15 @@ def create_asset(token, organization_context, business_unit_id=None, created_by_
     return response['data']
 
 
-def create_asset_version(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None,
-                         asset_version_name=None, product_id=None):
+def create_asset_version(
+    token,
+    organization_context,
+    business_unit_id=None,
+    created_by_user_id=None,
+    asset_id=None,
+    asset_version_name=None,
+    product_id=None,
+):
     """
     Create a new Asset Version.
 
@@ -274,16 +287,16 @@ def create_asset_version(token, organization_context, business_unit_id=None, cre
 
 
 def create_new_asset_version_artifact_and_test_for_upload(
-        token,
-        organization_context,
-        business_unit_id=None,
-        created_by_user_id=None,
-        asset_id=None,
-        version=None,
-        product_id=None,
-        test_type=None,
-        artifact_description=None,
-        upload_method: UploadMethod = UploadMethod.API,
+    token,
+    organization_context,
+    business_unit_id=None,
+    created_by_user_id=None,
+    asset_id=None,
+    version=None,
+    product_id=None,
+    test_type=None,
+    artifact_description=None,
+    upload_method: UploadMethod = UploadMethod.API,
 ):
     """
     Creates the entities needed for uploading a file for Binary Analysis or test results from a third party scanner to an existing Asset. This will create a new Asset Version, Artifact, and Test.
@@ -401,10 +414,19 @@ def create_new_asset_version_artifact_and_test_for_upload(
         return test_id
 
 
-def create_new_asset_version_and_upload_binary(token, organization_context, business_unit_id=None,
-                                               created_by_user_id=None, asset_id=None, version=None, file_path=None,
-                                               product_id=None, artifact_description=None, quick_scan=False,
-                                               upload_method: UploadMethod = UploadMethod.API):
+def create_new_asset_version_and_upload_binary(
+    token,
+    organization_context,
+    business_unit_id=None,
+    created_by_user_id=None,
+    asset_id=None,
+    version=None,
+    file_path=None,
+    product_id=None,
+    artifact_description=None,
+    quick_scan=False,
+    upload_method: UploadMethod = UploadMethod.API,
+):
     """
     Creates a new Asset Version for an existing asset, and uploads a binary file for Finite State Binary Analysis.
     By default, this uses the existing Business Unit and Created By User for the Asset. If you need to change these, you can provide the IDs for them.
@@ -450,14 +472,18 @@ def create_new_asset_version_and_upload_binary(token, organization_context, busi
     # create the asset version and binary test
     if not artifact_description:
         artifact_description = "Firmware Binary"
-    binary_test_id = create_new_asset_version_artifact_and_test_for_upload(token, organization_context,
-                                                                           business_unit_id=business_unit_id,
-                                                                           created_by_user_id=created_by_user_id,
-                                                                           asset_id=asset_id, version=version,
-                                                                           product_id=product_id,
-                                                                           test_type="finite_state_binary_analysis",
-                                                                           artifact_description=artifact_description,
-                                                                           upload_method=upload_method)
+    binary_test_id = create_new_asset_version_artifact_and_test_for_upload(
+        token,
+        organization_context,
+        business_unit_id=business_unit_id,
+        created_by_user_id=created_by_user_id,
+        asset_id=asset_id,
+        version=version,
+        product_id=product_id,
+        test_type="finite_state_binary_analysis",
+        artifact_description=artifact_description,
+        upload_method=upload_method,
+    )
 
     # upload file for binary test
     response = upload_file_for_binary_analysis(token, organization_context, test_id=binary_test_id, file_path=file_path,

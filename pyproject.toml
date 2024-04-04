@@ -116,7 +116,6 @@ use_parentheses = true
 line_length = 128
 atomic = true
 skip = ["venv/"]
-known_first_party = ["common"]
 
 [tool.flake8]
 # E221: Multiple spaces before operator
