@@ -273,10 +273,18 @@ def create_asset_version(token, organization_context, business_unit_id=None, cre
     return response['data']
 
 
-def create_new_asset_version_artifact_and_test_for_upload(token, organization_context, business_unit_id=None,
-                                                          created_by_user_id=None, asset_id=None, version=None,
-                                                          product_id=None, test_type=None, artifact_description=None,
-                                                          upload_method: UploadMethod = UploadMethod.API):
+def create_new_asset_version_artifact_and_test_for_upload(
+        token,
+        organization_context,
+        business_unit_id=None,
+        created_by_user_id=None,
+        asset_id=None,
+        version=None,
+        product_id=None,
+        test_type=None,
+        artifact_description=None,
+        upload_method: UploadMethod = UploadMethod.API,
+):
     """
     Creates the entities needed for uploading a file for Binary Analysis or test results from a third party scanner to an existing Asset. This will create a new Asset Version, Artifact, and Test.
     This method is used by the upload_file_for_binary_analysis and upload_test_results_file methods, which are generally easier to use for basic use cases.
@@ -559,7 +567,7 @@ def create_product(token, organization_context, business_unit_id=None, created_b
 
     graphql_query = '''
     mutation CreateProductMutation($input: CreateProductInput!) {
-		createProduct(input: $input) {
+        createProduct(input: $input) {
             id
             name
             vendor {
@@ -576,7 +584,7 @@ def create_product(token, organization_context, business_unit_id=None, created_b
             ctx {
                 businessUnit
             }
-		}
+        }
     }
     '''
 
