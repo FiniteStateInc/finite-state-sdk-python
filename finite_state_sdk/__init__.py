@@ -698,8 +698,6 @@ def create_test(token, organization_context, business_unit_id=None, created_by_u
         raise ValueError("Test name is required")
     if not test_type:
         raise ValueError("Test type is required")
-    if not upload_method:
-        raise ValueError("Upload method is required")
 
     graphql_query = '''
     mutation CreateTestMutation($input: CreateTestInput!) {
