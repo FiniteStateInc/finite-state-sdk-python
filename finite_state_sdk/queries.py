@@ -1,5 +1,3 @@
-import json
-
 """
 GraphQL queries for the Finite State Platform
 """
@@ -327,7 +325,7 @@ query GenerateExportDownloadPresignedUrl($exportId: ID!) {
   }
 }
 """,
-    "variables": lambda export_id: { "exportId": export_id }
+    "variables": lambda export_id: {"exportId": export_id}
 }
 
 
@@ -947,10 +945,10 @@ def __create_UPDATE_FINDING_STATUSES_VARIABLES(user_id=None, finding_ids=None, s
     return {
         "ids": finding_ids,
         "updateStatusInput": {
-                "comment": comment,
-                "status": status,
-                "justification": justification,
-                "responses": response
+            "comment": comment,
+            "status": status,
+            "justification": justification,
+            "responses": response
         },
         "userId": user_id
     }

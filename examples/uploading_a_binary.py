@@ -96,7 +96,7 @@ file_path = ""  # CHANGEME: Path to the file you want to upload
 version_name = ""  # CHANGEME: Name of the version you are uploading (e.g. 1.0, 1.1, etc.)
 
 # upload the binary
-response = finite_state_sdk.create_new_asset_version_and_upload_binary(token, ORGANIZATION_CONTEXT, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, version=version_name, file_path=file_path, product_id=None)
+response = finite_state_sdk.create_new_asset_version_and_upload_binary(token, ORGANIZATION_CONTEXT, business_unit_id=business_unit_id, created_by_user_id=created_by_user_id, asset_id=asset_id, version=version_name, file_path=file_path, product_id=None, upload_method=finite_state_sdk.UploadMethod.API)
 print("Uploaded the binary:")
 print(json.dumps(response, indent=4))
 
