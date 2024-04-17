@@ -3,3 +3,5 @@ dist
 venv
 .secret*
 token.txt
+/.idea/*
+/.python-version

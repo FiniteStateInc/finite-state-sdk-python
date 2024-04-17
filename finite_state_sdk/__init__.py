@@ -234,7 +234,10 @@ def create_asset_version(
 
     Returns:
         dict: createAssetVersion Object
+
+    deprecated:: 0.1.7. Use create_asset_version_on_asset instead.
     """
+    warn('`create_asset_version` is deprecated. Use: `create_asset_version_on_asset instead`', DeprecationWarning, stacklevel=2)
     if not business_unit_id:
         raise ValueError("Business unit ID is required")
     if not created_by_user_id:
@@ -281,6 +284,61 @@ def create_asset_version(
 
     if product_id is not None:
         variables["input"]["ctx"]["products"] = product_id
+
+    response = send_graphql_query(token, organization_context, graphql_query, variables)
+    return response['data']
+
+
+def create_asset_version_on_asset(
+    token,
+    organization_context,
+    created_by_user_id=None,
+    asset_id=None,
+    asset_version_name=None,
+):
+    """
+    Create a new Asset Version.
+
+    Args:
+        token (str):
+            Auth token. This is the token returned by get_auth_token(). Just the token, do not include "Bearer" in this string, that is handled inside the method.
+        organization_context (str):
+            Organization context. This is provided by the Finite State API management. It looks like "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx".
+        created_by_user_id (str, optional):
+            User ID of the user creating the asset version.
+        asset_id (str, required):
+            Asset ID to associate the asset version with.
+        asset_version_name (str, required):
+            The name of the Asset Version being created.
+
+    Raises:
+        ValueError: Raised if business_unit_id, created_by_user_id, asset_id, or asset_version_name are not provided.
+        Exception: Raised if the query fails.
+
+    Returns:
+        dict: createAssetVersion Object
+    """
+    if not asset_id:
+        raise ValueError("Asset ID is required")
+    if not asset_version_name:
+        raise ValueError("Asset version name is required")
+
+    graphql_query = '''
+        mutation BapiCreateAssetVersion($assetVersionName: String!, $assetId: ID!, $createdByUserId: ID!) {
+            createNewAssetVersionOnAsset(assetVersionName: $assetVersionName, assetId: $assetId, createdByUserId: $createdByUserId) {
+                id
+                assetVersion {
+                    id
+                }
+            }
+        }
+    '''
+
+    # Asset name, business unit context, and creating user are required
+    variables = {"assetVersionName": asset_version_name, "assetId": asset_id}
+
+    if created_by_user_id:
+        variables["createdByUserId"] = created_by_user_id
 
     response = send_graphql_query(token, organization_context, graphql_query, variables)
     return response['data']
@@ -363,9 +421,9 @@ def create_new_asset_version_artifact_and_test_for_upload(
             raise ValueError("Created By User ID is required and could not be retrieved from the existing asset")
 
     # create the asset version
-    response = create_asset_version(token, organization_context, business_unit_id=business_unit_id,
-                                    created_by_user_id=created_by_user_id, asset_id=asset_id,
-                                    asset_version_name=version)
+    response = create_asset_version_on_asset(
+        token, organization_context, created_by_user_id=created_by_user_id, asset_id=asset_id, asset_version_name=version
+    )
     # get the asset version ID
     asset_version_id = response['createAssetVersion']['id']
 
@@ -646,8 +704,19 @@ def create_product(token, organization_context, business_unit_id=None, created_b
     return response['data']
 
 
-def create_test(token, organization_context, business_unit_id=None, created_by_user_id=None, asset_id=None,
-                artifact_id=None, test_name=None, product_id=None, test_type=None, tools=[], upload_method: UploadMethod = UploadMethod.API):
+def create_test(
+    token,
+    organization_context,
+    business_unit_id=None,
+    created_by_user_id=None,
+    asset_id=None,
+    artifact_id=None,
+    test_name=None,
+    product_id=None,
+    test_type=None,
+    tools=[],
+    upload_method: UploadMethod = UploadMethod.API,
+):
     """
     Create a new Test object for uploading files.
     This is an advanced method - you are probably looking for create_new_asset_version_and_upload_test_results or create_new_asset_version_and_upload_binary.
@@ -802,8 +871,17 @@ def create_test_as_binary_analysis(token, organization_context, business_unit_id
                        tools=tools, upload_method=upload_method)
 
 
-def create_test_as_cyclone_dx(token, organization_context, business_unit_id=None, created_by_user_id=None,
-                              asset_id=None, artifact_id=None, test_name=None, product_id=None, upload_method: UploadMethod = UploadMethod.API):
+def create_test_as_cyclone_dx(
+    token,
+    organization_context,
+    business_unit_id=None,
+    created_by_user_id=None,
+    asset_id=None,
+    artifact_id=None,
+    test_name=None,
+    product_id=None,
+    upload_method: UploadMethod = UploadMethod.API,
+):
     """
     Create a new Test object for uploading CycloneDX files.
 
