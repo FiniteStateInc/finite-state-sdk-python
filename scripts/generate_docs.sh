@@ -1,1 +1,1 @@
-pdoc -o docs -d google --logo "https://camo.githubusercontent.com/ea2191106c0aa7006f669bef130bf089bb3fedc0463bcecebeabbefd6b4362ad/68747470733a2f2f66696e69746573746174652e696f2f68732d66732f68756266732f46532d4c6f676f2d46696e616c2d30312e706e67" -t ./docs-template ./finite_state_sdk
+poetry run pdoc -o docs -d google --logo "https://camo.githubusercontent.com/ea2191106c0aa7006f669bef130bf089bb3fedc0463bcecebeabbefd6b4362ad/68747470733a2f2f66696e69746573746174652e696f2f68732d66732f68756266732f46532d4c6f676f2d46696e616c2d30312e706e67" -t ./docs-template ./finite_state_sdk

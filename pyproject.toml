@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "finite-state-sdk"
-version = "0.1.7"
+version = "0.1.17"
 authors = [
     "Finite State, Inc. <developer-tools@finitestate.io>"
 ]
