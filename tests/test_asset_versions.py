@@ -48,7 +48,7 @@ class TestAssetVersions(TestCase):
         mock_send_query.assert_called_once_with(
             self.auth_token,
             self.organization_context,
-            '''
+            """
         mutation BapiCreateAssetVersion($assetVersionName: String!, $assetId: ID!, $createdByUserId: ID!) {
             createNewAssetVersionOnAsset(assetVersionName: $assetVersionName, assetId: $assetId, createdByUserId: $createdByUserId) {
                 id
@@ -57,13 +57,7 @@ class TestAssetVersions(TestCase):
                 }
             }
         }
-    ''',
-            {
-                "input": {
-                    "assetVersionName": self.asset_version_name,
-                    "assetId": self.asset_id,
-                    "createdByUserId": self.created_by_user_id
-                }
-            }
+    """,
+            {"assetVersionName": self.asset_version_name, "assetId": self.asset_id, "createdByUserId": self.created_by_user_id},
         )
         self.assertEqual(response, self.mock_response['data'])
