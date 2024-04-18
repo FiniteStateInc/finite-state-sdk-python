@@ -188,7 +188,7 @@
     </ul>
 
 
-    <footer>finite-state-sdk-python v0.1.7</footer>
+    <footer>finite-state-sdk-python v0.1.8</footer>
 
         <a class="attribution" title="pdoc: Python API documentation generator" href="https://pdoc.dev" target="_blank">
             built with <span class="visually-hidden">pdoc</span><img
@@ -634,7 +634,7 @@ finite_state_sdk    </h1>
 </span><span id="L-425"><a href="#L-425"><span class="linenos"> 425</span></a>        <span class="n">token</span><span class="p">,</span> <span class="n">organization_context</span><span class="p">,</span> <span class="n">created_by_user_id</span><span class="o">=</span><span class="n">created_by_user_id</span><span class="p">,</span> <span class="n">asset_id</span><span class="o">=</span><span class="n">asset_id</span><span class="p">,</span> <span class="n">asset_version_name</span><span class="o">=</span><span class="n">version</span>
 </span><span id="L-426"><a href="#L-426"><span class="linenos"> 426</span></a>    <span class="p">)</span>
 </span><span id="L-427"><a href="#L-427"><span class="linenos"> 427</span></a>    <span class="c1"># get the asset version ID</span>
-</span><span id="L-428"><a href="#L-428"><span class="linenos"> 428</span></a>    <span class="n">asset_version_id</span> <span class="o">=</span> <span class="n">response</span><span class="p">[</span><span class="s1">&#39;createAssetVersion&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+</span><span id="L-428"><a href="#L-428"><span class="linenos"> 428</span></a>    <span class="n">asset_version_id</span> <span class="o">=</span> <span class="n">response</span><span class="p">[</span><span class="s1">&#39;createNewAssetVersionOnAsset&#39;</span><span class="p">][</span><span class="s1">&#39;assetVersion&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
 </span><span id="L-429"><a href="#L-429"><span class="linenos"> 429</span></a>
 </span><span id="L-430"><a href="#L-430"><span class="linenos"> 430</span></a>    <span class="c1"># create the test</span>
 </span><span id="L-431"><a href="#L-431"><span class="linenos"> 431</span></a>    <span class="k">if</span> <span class="n">test_type</span> <span class="o">==</span> <span class="s2">&quot;finite_state_binary_analysis&quot;</span><span class="p">:</span>
@@ -3194,7 +3194,7 @@ Please see the examples in the Github repository for more information:</p>
 </span><span id="create_new_asset_version_artifact_and_test_for_upload-426"><a href="#create_new_asset_version_artifact_and_test_for_upload-426"><span class="linenos">426</span></a>        <span class="n">token</span><span class="p">,</span> <span class="n">organization_context</span><span class="p">,</span> <span class="n">created_by_user_id</span><span class="o">=</span><span class="n">created_by_user_id</span><span class="p">,</span> <span class="n">asset_id</span><span class="o">=</span><span class="n">asset_id</span><span class="p">,</span> <span class="n">asset_version_name</span><span class="o">=</span><span class="n">version</span>
 </span><span id="create_new_asset_version_artifact_and_test_for_upload-427"><a href="#create_new_asset_version_artifact_and_test_for_upload-427"><span class="linenos">427</span></a>    <span class="p">)</span>
 </span><span id="create_new_asset_version_artifact_and_test_for_upload-428"><a href="#create_new_asset_version_artifact_and_test_for_upload-428"><span class="linenos">428</span></a>    <span class="c1"># get the asset version ID</span>
-</span><span id="create_new_asset_version_artifact_and_test_for_upload-429"><a href="#create_new_asset_version_artifact_and_test_for_upload-429"><span class="linenos">429</span></a>    <span class="n">asset_version_id</span> <span class="o">=</span> <span class="n">response</span><span class="p">[</span><span class="s1">&#39;createAssetVersion&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+</span><span id="create_new_asset_version_artifact_and_test_for_upload-429"><a href="#create_new_asset_version_artifact_and_test_for_upload-429"><span class="linenos">429</span></a>    <span class="n">asset_version_id</span> <span class="o">=</span> <span class="n">response</span><span class="p">[</span><span class="s1">&#39;createNewAssetVersionOnAsset&#39;</span><span class="p">][</span><span class="s1">&#39;assetVersion&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
 </span><span id="create_new_asset_version_artifact_and_test_for_upload-430"><a href="#create_new_asset_version_artifact_and_test_for_upload-430"><span class="linenos">430</span></a>
 </span><span id="create_new_asset_version_artifact_and_test_for_upload-431"><a href="#create_new_asset_version_artifact_and_test_for_upload-431"><span class="linenos">431</span></a>    <span class="c1"># create the test</span>
 </span><span id="create_new_asset_version_artifact_and_test_for_upload-432"><a href="#create_new_asset_version_artifact_and_test_for_upload-432"><span class="linenos">432</span></a>    <span class="k">if</span> <span class="n">test_type</span> <span class="o">==</span> <span class="s2">&quot;finite_state_binary_analysis&quot;</span><span class="p">:</span>

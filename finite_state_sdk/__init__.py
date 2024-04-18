@@ -425,7 +425,7 @@ def create_new_asset_version_artifact_and_test_for_upload(
         token, organization_context, created_by_user_id=created_by_user_id, asset_id=asset_id, asset_version_name=version
     )
     # get the asset version ID
-    asset_version_id = response['createAssetVersion']['id']
+    asset_version_id = response['createNewAssetVersionOnAsset']['assetVersion']['id']
 
     # create the test
     if test_type == "finite_state_binary_analysis":
