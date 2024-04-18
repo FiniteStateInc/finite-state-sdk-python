@@ -1,5 +1,19 @@
 # Finite State Python SDK RELEASE NOTES
 
+# v0.1.8
+
+## New Features
+
+N/A
+
+## Bug Fixes
+
+* fix create asset version bug
+
+## Breaking Changes
+
+N/A
+
 # v0.1.4
 
 ## New Features
