@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "finite-state-sdk-docs"
-version = "0.1.9"
+version = "0.0-1"
 authors = [
     "Finite State, Inc. <developer-tools@finitestate.io>"
 ]
@@ -13,7 +13,7 @@ maintainers = [
 ]
 repository = "https://www.github.com/FiniteStateInc/finite-state-sdk-python"
 homepage = "https://github.com/FiniteStateInc/finite-state-sdk-python"
-description = "The official Finite State Python SDK."
+description = "The official Finite State Python SDK. Docs generation."
 readme = "README.md"
 license = "MIT"
 classifiers = [
