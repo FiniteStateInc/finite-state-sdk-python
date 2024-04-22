@@ -5,3 +5,4 @@ venv
 token.txt
 /.idea/*
 /.python-version
+/docs-generation/.python-version
