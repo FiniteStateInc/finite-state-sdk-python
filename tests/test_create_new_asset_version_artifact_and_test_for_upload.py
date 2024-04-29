@@ -1,5 +1,4 @@
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from finite_state_sdk import create_new_asset_version_artifact_and_test_for_upload, UploadMethod
 
 class TestCreateAssetVersionArtifactAndTestForUpload:

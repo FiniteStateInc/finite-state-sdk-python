@@ -1,6 +1,7 @@
-import pytest
 from unittest.mock import patch
+
 from finite_state_sdk import create_asset
+
 
 class TestCreateAsset:
     # Define test data
