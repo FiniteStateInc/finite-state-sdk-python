@@ -1997,9 +1997,9 @@ def update_finding_statuses(token, organization_context, user_id=None, finding_i
         dict: Response JSON from the GraphQL query of type UpdateFindingsStatusesResponse. For details see https://docs.finitestate.io/types/update-findings-statuses-response
     """
     if not user_id:
-        raise ValueError("User ID is required")
+        raise ValueError("User Id is required")
     if not finding_ids:
-        raise ValueError("Finding ID is required")
+        raise ValueError("Finding Ids is required")
     if not status:
         raise ValueError("Status is required")
 
@@ -2041,9 +2041,9 @@ def upload_file_for_binary_analysis(token, organization_context, test_id=None, f
     # To upload a file for Binary Analysis, you must use the generateMultiplePartUploadUrl mutation
 
     if not test_id:
-        raise ValueError("Test ID is required")
+        raise ValueError("Test Id is required")
     if not file_path:
-        raise ValueError("File path is required")
+        raise ValueError("File Path is required")
 
     # Start Multi-part Upload
     graphql_query = '''
@@ -2168,9 +2168,9 @@ def upload_test_results_file(token, organization_context, test_id=None, file_pat
         dict: The response from the GraphQL query, a completeTestResultUpload Object.
     """
     if not test_id:
-        raise ValueError("Test ID is required")
+        raise ValueError("Test Id is required")
     if not file_path:
-        raise ValueError("File path is required")
+        raise ValueError("File Path is required")
 
     # Gerneate Test Result Upload URL
     graphql_query = '''
