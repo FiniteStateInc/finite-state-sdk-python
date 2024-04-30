@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 from finite_state_sdk import download_asset_version_report
 
+
 class TestDownloadAssetVersionReport:
     # Define test data
     auth_token = "your_auth_token"
@@ -82,4 +83,3 @@ class TestDownloadAssetVersionReport:
         )
         mock_get.assert_called_once_with("mock_download_url")
         assert str(e.value) == f"Failed to download the file. Status code: {mock_response.status_code}"
-

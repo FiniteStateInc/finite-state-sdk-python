@@ -83,4 +83,3 @@ class TestDownloadSBOM:
         )
         mock_get.assert_called_once_with("mock_download_url")
         assert str(e.value) == f"Failed to download the file. Status code: {mock_response.status_code}"
-

@@ -1,5 +1,5 @@
-from unittest.mock import patch, ANY
-from finite_state_sdk import search_sbom, queries
+from unittest.mock import patch
+from finite_state_sdk import search_sbom
 
 
 class TestSearchSBOM:

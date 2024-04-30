@@ -75,7 +75,7 @@ class TestDownloadProductReport:
         # Assertions
         mock_generate_url.assert_called_once_with(
             self.auth_token,
-           self.organization_context,
+            self.organization_context,
             product_id=self.product_id,
             report_type=self.report_type,
             report_subtype=self.report_subtype,

@@ -1,5 +1,4 @@
 import pytest
-import requests
 from unittest.mock import patch, MagicMock
 from finite_state_sdk import send_graphql_query
 
@@ -49,8 +48,3 @@ class TestSendGraphQLQuery:
 
         # Assertion
         assert str(excinfo.value) == "Error: 500 - Internal Server Error"
-
-
-# Run the test
-if __name__ == "__main__":
-    pytest.main()

@@ -81,4 +81,3 @@ class TestCreateTestAsBinaryAnalysis:
         )
 
         assert response == self.mock_response['data']
-

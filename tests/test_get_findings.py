@@ -72,4 +72,3 @@ class TestGetFindings:
             limit=self.limit
         )
         assert result == [{"id": "finding1"}, {"id": "finding2"}, {"id": "finding3"}]
-
