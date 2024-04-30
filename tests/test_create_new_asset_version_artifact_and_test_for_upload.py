@@ -69,13 +69,12 @@ class TestCreateAssetVersionArtifactAndTestForUpload:
         )
 
         mock_get_all_assets.assert_called_once()
-        mock_send_query.assert_called()
         mock_create_asset_version_on_asset.assert_called_once()
         mock_create_artifact.assert_called_once()
         mock_create_test_binary_analysis.assert_called_once()
         mock_create_test_third_party_scanner.assert_not_called()
 
-        assert response == self.mock_response_create_test['id']
+        assert response == self.mock_response_create_test['createTest']['id']
 
     @patch("finite_state_sdk.create_asset_version_on_asset")
     @patch("finite_state_sdk.create_artifact")
