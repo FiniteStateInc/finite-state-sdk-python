@@ -10,8 +10,17 @@ API_URL = 'https://platform.finitestate.io/api/v1/graphql'
 AUDIENCE = "https://platform.finitestate.io/api/v1/graphql"
 TOKEN_URL = "https://platform.finitestate.io/api/v1/auth/token"
 
+"""
+DEFAULT CHUNK SIZE: 1000 MiB
+"""
 DEFAULT_CHUNK_SIZE = 1024**2 * 1000
+"""
+MAX CHUNK SIZE: 2 GiB
+"""
 MAX_CHUNK_SIZE = 1024**2 * 2000
+"""
+MIN CHUNK SIZE: 5 MiB
+"""
 MIN_CHUNK_SIZE = 1024**2 * 5
 
 
@@ -1098,7 +1107,7 @@ def download_sbom(token, organization_context, sbom_type="CYCLONEDX", sbom_subty
         raise Exception(f"Failed to download the file. Status code: {response.status_code}")
 
 
-def file_chunks(file_path, chunk_size=1024 * 1024 * 1024 * 5):
+def file_chunks(file_path, chunk_size=DEFAULT_CHUNK_SIZE):
     """
     Helper method to read a file in chunks.
 
@@ -1106,7 +1115,7 @@ def file_chunks(file_path, chunk_size=1024 * 1024 * 1024 * 5):
         file_path (str):
             Local path to the file to read.
         chunk_size (int, optional):
-            The size of the chunks to read. Defaults to 5GB.
+            The size of the chunks to read. Defaults to DEFAULT_CHUNK_SIZE.
 
     Yields:
         bytes: The next chunk of the file.
