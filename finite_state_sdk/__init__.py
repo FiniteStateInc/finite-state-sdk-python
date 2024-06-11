@@ -10,6 +10,10 @@ API_URL = 'https://platform.finitestate.io/api/v1/graphql'
 AUDIENCE = "https://platform.finitestate.io/api/v1/graphql"
 TOKEN_URL = "https://platform.finitestate.io/api/v1/auth/token"
 
+DEFAULT_CHUNK_SIZE = 1024**2 * 1000
+MAX_CHUNK_SIZE = 1024**2 * 2000
+MIN_CHUNK_SIZE = 1024**2 * 5
+
 
 class UploadMethod(Enum):
     """
@@ -2012,7 +2016,7 @@ def update_finding_statuses(token, organization_context, user_id=None, finding_i
 
 
 def upload_file_for_binary_analysis(
-    token, organization_context, test_id=None, file_path=None, chunk_size=1024**2 * 1000, quick_scan=False
+    token, organization_context, test_id=None, file_path=None, chunk_size=DEFAULT_CHUNK_SIZE, quick_scan=False
 ):
     """
     Upload a file for Binary Analysis. Will automatically chunk the file into chunks and upload each chunk.
@@ -2044,10 +2048,10 @@ def upload_file_for_binary_analysis(
         raise ValueError("Test Id is required")
     if not file_path:
         raise ValueError("File Path is required")
-    if chunk_size < 1024**2 * 5:
-        raise ValueError("Chunk size must be greater than 5 MiB")
-    if chunk_size >= 1024**3 * 2:
-        raise ValueError("Chunk size must be less than 2 GiB")
+    if chunk_size < MIN_CHUNK_SIZE:
+        raise ValueError(f"Chunk size must be greater than {MIN_CHUNK_SIZE} bytes")
+    if chunk_size >= MAX_CHUNK_SIZE:
+        raise ValueError(f"Chunk size must be less than {MAX_CHUNK_SIZE} bytes")
 
     # Start Multi-part Upload
     graphql_query = '''
