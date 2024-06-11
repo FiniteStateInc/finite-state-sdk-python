@@ -2011,10 +2011,11 @@ def update_finding_statuses(token, organization_context, user_id=None, finding_i
     return send_graphql_query(token, organization_context, mutation, variables)
 
 
-def upload_file_for_binary_analysis(token, organization_context, test_id=None, file_path=None,
-                                    chunk_size=1024 * 1024 * 1024 * 5, quick_scan=False):
+def upload_file_for_binary_analysis(
+    token, organization_context, test_id=None, file_path=None, chunk_size=1024**2 * 1000, quick_scan=False
+):
     """
-    Upload a file for Binary Analysis. Will automatically chunk the file into chunks and upload each chunk. Chunk size defaults to 5GB.
+    Upload a file for Binary Analysis. Will automatically chunk the file into chunks and upload each chunk.
     NOTE: This is NOT for uploading third party scanner results. Use upload_test_results_file for that.
 
     Args:
@@ -2027,7 +2028,7 @@ def upload_file_for_binary_analysis(token, organization_context, test_id=None, f
         file_path (str, required):
             Local path to the file to upload.
         chunk_size (int, optional):
-            The size of the chunks to read. Defaults to 5GB.
+            The size of the chunks to read. 1000 MiB by default. Min 5MiB and max 2GiB.
         quick_scan (bool, optional):
             If True, will perform a quick scan of the Binary. Defaults to False (Full Scan). For details, please see the API documentation.
 
@@ -2039,11 +2040,14 @@ def upload_file_for_binary_analysis(token, organization_context, test_id=None, f
         dict: The response from the GraphQL query, a completeMultipartUpload Object.
     """
     # To upload a file for Binary Analysis, you must use the generateMultiplePartUploadUrl mutation
-
     if not test_id:
         raise ValueError("Test Id is required")
     if not file_path:
         raise ValueError("File Path is required")
+    if chunk_size < 1024**2 * 5:
+        raise ValueError("Chunk size must be greater than 5 MiB")
+    if chunk_size >= 1024**3 * 2:
+        raise ValueError("Chunk size must be less than 2 GiB")
 
     # Start Multi-part Upload
     graphql_query = '''
@@ -2067,9 +2071,10 @@ def upload_file_for_binary_analysis(token, organization_context, test_id=None, f
     # if the file is greater than max chunk size (or 5 GB), split the file in chunks,
     # call generateUploadPartUrlV2 for each chunk of the file (even if it is a single part)
     # and upload the file to the returned upload URL
-    i = 1
+    i = 0
     part_data = []
     for chunk in file_chunks(file_path, chunk_size):
+        i = i + 1
         graphql_query = '''
         mutation GenerateUploadPartUrl($partNumber: Int!, $uploadId: ID!, $uploadKey: String!) {
             generateUploadPartUrlV2(partNumber: $partNumber, uploadId: $uploadId, uploadKey: $uploadKey) {
