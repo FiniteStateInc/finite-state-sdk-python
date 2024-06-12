@@ -10,6 +10,19 @@ API_URL = 'https://platform.finitestate.io/api/v1/graphql'
 AUDIENCE = "https://platform.finitestate.io/api/v1/graphql"
 TOKEN_URL = "https://platform.finitestate.io/api/v1/auth/token"
 
+"""
+DEFAULT CHUNK SIZE: 1000 MiB
+"""
+DEFAULT_CHUNK_SIZE = 1024**2 * 1000
+"""
+MAX CHUNK SIZE: 2 GiB
+"""
+MAX_CHUNK_SIZE = 1024**2 * 2000
+"""
+MIN CHUNK SIZE: 5 MiB
+"""
+MIN_CHUNK_SIZE = 1024**2 * 5
+
 
 class UploadMethod(Enum):
     """
@@ -1094,7 +1107,7 @@ def download_sbom(token, organization_context, sbom_type="CYCLONEDX", sbom_subty
         raise Exception(f"Failed to download the file. Status code: {response.status_code}")
 
 
-def file_chunks(file_path, chunk_size=1024 * 1024 * 1024 * 5):
+def file_chunks(file_path, chunk_size=DEFAULT_CHUNK_SIZE):
     """
     Helper method to read a file in chunks.
 
@@ -1102,7 +1115,7 @@ def file_chunks(file_path, chunk_size=1024 * 1024 * 1024 * 5):
         file_path (str):
             Local path to the file to read.
         chunk_size (int, optional):
-            The size of the chunks to read. Defaults to 5GB.
+            The size of the chunks to read. Defaults to DEFAULT_CHUNK_SIZE.
 
     Yields:
         bytes: The next chunk of the file.
@@ -2011,10 +2024,11 @@ def update_finding_statuses(token, organization_context, user_id=None, finding_i
     return send_graphql_query(token, organization_context, mutation, variables)
 
 
-def upload_file_for_binary_analysis(token, organization_context, test_id=None, file_path=None,
-                                    chunk_size=1024 * 1024 * 1024 * 5, quick_scan=False):
+def upload_file_for_binary_analysis(
+    token, organization_context, test_id=None, file_path=None, chunk_size=DEFAULT_CHUNK_SIZE, quick_scan=False
+):
     """
-    Upload a file for Binary Analysis. Will automatically chunk the file into chunks and upload each chunk. Chunk size defaults to 5GB.
+    Upload a file for Binary Analysis. Will automatically chunk the file into chunks and upload each chunk.
     NOTE: This is NOT for uploading third party scanner results. Use upload_test_results_file for that.
 
     Args:
@@ -2027,7 +2041,7 @@ def upload_file_for_binary_analysis(token, organization_context, test_id=None, f
         file_path (str, required):
             Local path to the file to upload.
         chunk_size (int, optional):
-            The size of the chunks to read. Defaults to 5GB.
+            The size of the chunks to read. 1000 MiB by default. Min 5MiB and max 2GiB.
         quick_scan (bool, optional):
             If True, will perform a quick scan of the Binary. Defaults to False (Full Scan). For details, please see the API documentation.
 
@@ -2039,11 +2053,14 @@ def upload_file_for_binary_analysis(token, organization_context, test_id=None, f
         dict: The response from the GraphQL query, a completeMultipartUpload Object.
     """
     # To upload a file for Binary Analysis, you must use the generateMultiplePartUploadUrl mutation
-
     if not test_id:
         raise ValueError("Test Id is required")
     if not file_path:
         raise ValueError("File Path is required")
+    if chunk_size < MIN_CHUNK_SIZE:
+        raise ValueError(f"Chunk size must be greater than {MIN_CHUNK_SIZE} bytes")
+    if chunk_size >= MAX_CHUNK_SIZE:
+        raise ValueError(f"Chunk size must be less than {MAX_CHUNK_SIZE} bytes")
 
     # Start Multi-part Upload
     graphql_query = '''
@@ -2067,9 +2084,10 @@ def upload_file_for_binary_analysis(token, organization_context, test_id=None, f
     # if the file is greater than max chunk size (or 5 GB), split the file in chunks,
     # call generateUploadPartUrlV2 for each chunk of the file (even if it is a single part)
     # and upload the file to the returned upload URL
-    i = 1
+    i = 0
     part_data = []
     for chunk in file_chunks(file_path, chunk_size):
+        i = i + 1
         graphql_query = '''
         mutation GenerateUploadPartUrl($partNumber: Int!, $uploadId: ID!, $uploadKey: String!) {
             generateUploadPartUrlV2(partNumber: $partNumber, uploadId: $uploadId, uploadKey: $uploadKey) {
