@@ -1292,6 +1292,12 @@ def get_all_paginated_results(token, organization_context, query, variables=None
         raise Exception("Error: limit cannot be greater than 1000")
     if limit < 1:
         raise Exception("Error: limit cannot be less than 1")
+    if not variables["first"]:
+        raise Exception("Error: first is required")
+    if variables["first"] < 1:
+        raise Exception("Error: first cannot be less than 1")
+    if variables["first"] > limit:
+        raise Exception("Error: limit cannot be greater than first")
 
     # query the API for the first page of results
     response_data = send_graphql_query(token, organization_context, query, variables)
