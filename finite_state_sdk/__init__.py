@@ -1320,8 +1320,6 @@ def get_all_paginated_results(token, organization_context, query, variables=None
         cursor = response_data['data'][field][len(response_data['data'][field]) - 1]['_cursor']
 
         while cursor:
-            if len(results) >= limit:
-                break
 
             variables['after'] = cursor
 
