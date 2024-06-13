@@ -1,10 +1,11 @@
 """
 GraphQL queries for the Finite State Platform
 """
+DEFAULT_PAGE_SIZE = 100
 
 ALL_BUSINESS_UNITS = {
     "query": """
-    query GetBusinessUnits(
+    query GetBusinessUnits_SDK(
         $after: String,
         $first: Int
     ) {
@@ -19,15 +20,12 @@ ALL_BUSINESS_UNITS = {
         }
     }
     """,
-    "variables": {
-        "after": None,
-        "first": 100
-    }
+    "variables": {"after": None, "first": DEFAULT_PAGE_SIZE},
 }
 
 ALL_USERS = {
     "query": """
-    query GetUsers(
+    query GetUsers_SDK(
         $after: String,
         $first: Int
     ) {
@@ -42,15 +40,12 @@ ALL_USERS = {
         }
     }
     """,
-    "variables": {
-        "after": None,
-        "first": 100
-    }
+    "variables": {"after": None, "first": DEFAULT_PAGE_SIZE},
 }
 
 ALL_ORGANIZATIONS = {
     "query": """
-    query GetOrganizations(
+    query GetOrganizations_SDK(
         $after: String,
         $first: Int
     ) {
@@ -65,10 +60,7 @@ ALL_ORGANIZATIONS = {
         }
     }
     """,
-    "variables": {
-        "after": None,
-        "first": 100
-    }
+    "variables": {"after": None, "first": DEFAULT_PAGE_SIZE},
 }
 
 
@@ -97,7 +89,7 @@ def _create_GET_ASSET_VERSION_VARIABLES(asset_version_id=None, asset_id=None, bu
 
 ALL_ASSET_VERSIONS = {
     "query": """
-    query GetAllAssetVersions(
+    query GetAllAssetVersions_SDK(
         $filter: AssetVersionFilter!,
         $after: String,
         $first: Int
@@ -141,11 +133,7 @@ ALL_ASSET_VERSIONS = {
 
 
 def asset_variables(asset_id=None, business_unit_id=None):
-    variables = {
-        "filter": {},
-        "after": None,
-        "first": 100
-    }
+    variables = {"filter": {}, "after": None, "first": DEFAULT_PAGE_SIZE}
 
     if asset_id is not None:
         variables["filter"]["id"] = asset_id
@@ -160,7 +148,7 @@ def asset_variables(asset_id=None, business_unit_id=None):
 
 ALL_ASSETS = {
     "query": """
-        query GetAllAssets(
+        query GetAllAssets_SDK(
             $filter: AssetFilter!,
             $after: String,
             $first: Int
@@ -209,12 +197,7 @@ ALL_ASSETS = {
 
 
 def artifact_variables(artifact_id=None, business_unit_id=None):
-    variables = {
-        "filter": {},
-        "after": None,
-        "first": 100,
-        "orderBy": ["name_ASC"]
-    }
+    variables = {"filter": {}, "after": None, "first": DEFAULT_PAGE_SIZE, "orderBy": ["name_ASC"]}
 
     if artifact_id is not None:
         variables["filter"]["id"] = artifact_id
@@ -229,7 +212,7 @@ def artifact_variables(artifact_id=None, business_unit_id=None):
 
 ALL_ARTIFACTS = {
     "query": """
-        query GetAllArtifacts(
+        query GetAllArtifacts_SDK(
             $filter: AssetFilter!,
             $after: String,
             $first: Int,
@@ -273,7 +256,7 @@ ALL_ARTIFACTS = {
 
 ALL_PRODUCTS = {
     "query": """
-        query GetAllProducts(
+        query GetAllProducts_SDK(
             $filter: ProductFilter!,
             $after: String,
             $first: Int
@@ -309,16 +292,12 @@ ALL_PRODUCTS = {
                 }
             }
         """,
-    "variables": {
-        "filter": {},
-        "after": None,
-        "first": 100
-    }
+    "variables": {"filter": {}, "after": None, "first": DEFAULT_PAGE_SIZE},
 }
 
 GENERATE_EXPORT_DOWNLOAD_PRESIGNED_URL = {
     "query": """
-query GenerateExportDownloadPresignedUrl($exportId: ID!) {
+query GenerateExportDownloadPresignedUrl_SDK($exportId: ID!) {
   generateExportDownloadPresignedUrl(exportId: $exportId) {
     downloadLink
     status
@@ -331,7 +310,7 @@ query GenerateExportDownloadPresignedUrl($exportId: ID!) {
 
 GET_PRODUCT_ASSET_VERSIONS = {
     "query": """
-query GetProductAssetVersions(
+query GetProductAssetVersions_SDK(
     $filter: ProductFilter!,
     $after: String,
     $first: Int
@@ -357,13 +336,7 @@ query GetProductAssetVersions(
         __typename
     }
 }""",
-    "variables": lambda product_id: {
-        "filter": {
-            "id": product_id
-        },
-        "after": None,
-        "first": 100
-    }
+    "variables": lambda product_id: {"filter": {"id": product_id}, "after": None, "first": DEFAULT_PAGE_SIZE},
 }
 
 
@@ -451,7 +424,7 @@ def _create_GET_FINDINGS_VARIABLES(asset_version_id=None, category=None, cve_id=
 
 GET_FINDINGS_COUNT = {
     "query": """
-query GetFindingsCount($filter: FindingFilter)
+query GetFindingsCount_SDK($filter: FindingFilter)
 {
     _allFindingsMeta(filter: $filter) {
         count
@@ -463,7 +436,7 @@ query GetFindingsCount($filter: FindingFilter)
 
 GET_FINDINGS = {
     "query": """
-query GetFindingsForAnAssetVersion (
+query GetFindingsForAnAssetVersion_SDK (
     $filter: FindingFilter,
     $after: String,
     $first: Int,
@@ -583,7 +556,7 @@ def _create_GET_SOFTWARE_COMPONENTS_VARIABLES(asset_version_id=None, type=None):
             "deletedAt": None
         },
         "after": None,
-        "first": 100,
+        "first": DEFAULT_PAGE_SIZE,
         "orderBy": ["absoluteRiskScore_DESC"]
     }
 
@@ -598,7 +571,7 @@ def _create_GET_SOFTWARE_COMPONENTS_VARIABLES(asset_version_id=None, type=None):
 
 GET_SOFTWARE_COMPONENTS = {
     "query": """
-query GetSoftwareComponentsForAnAssetVersion (
+query GetSoftwareComponentsForAnAssetVersion_SDK (
     $filter: SoftwareComponentInstanceFilter,
     $after: String,
     $first: Int,
@@ -689,11 +662,7 @@ query GetSoftwareComponentsForAnAssetVersion (
 
 
 def _create_GET_PRODUCTS_VARIABLES(product_id=None, business_unit_id=None):
-    variables = {
-        "filter": {},
-        "after": None,
-        "first": 100
-    }
+    variables = {"filter": {}, "after": None, "first": DEFAULT_PAGE_SIZE}
 
     if product_id:
         variables["filter"]["id"] = product_id
@@ -708,7 +677,7 @@ def _create_GET_PRODUCTS_VARIABLES(product_id=None, business_unit_id=None):
 
 GET_PRODUCTS = {
     "query": """
-        query GetAllProducts(
+        query GetAllProducts_SDK(
             $filter: ProductFilter!,
             $after: String,
             $first: Int
@@ -741,7 +710,7 @@ GET_PRODUCTS = {
 
 GET_PRODUCTS_BUSINESS_UNIT = {
     "query": """
-        query GetAllProducts(
+        query GetAllProducts_SDK(
             $filter: ProductFilter!,
             $after: String,
             $first: Int
@@ -771,8 +740,8 @@ GET_PRODUCTS_BUSINESS_UNIT = {
             }
         },
         "after": None,
-        "first": 100
-    }
+        "first": DEFAULT_PAGE_SIZE,
+    },
 }
 
 
@@ -787,7 +756,7 @@ def _create_LAUNCH_CYCLONEDX_EXPORT_VARIABLES(cdx_subtype, asset_version_id):
 
 LAUNCH_CYCLONEDX_EXPORT = {
     "mutation": """
-mutation LaunchCycloneDxExport($cdxSubtype: CycloneDxExportSubtype!, $assetVersionId: ID!) {
+mutation LaunchCycloneDxExport_SDK($cdxSubtype: CycloneDxExportSubtype!, $assetVersionId: ID!) {
   launchCycloneDxExport(cdxSubtype: $cdxSubtype, assetVersionId: $assetVersionId) {
     exportJobId
   }
@@ -807,7 +776,7 @@ def _create_LAUNCH_REPORT_EXPORT_MUTATION(asset_version_id=None, product_id=None
     if asset_version_id:
         if report_type == "CSV":
             mutation = """
-mutation LaunchArtifactCSVExport($artifactCsvSubtype: ArtifactCSVExportSubtype!, $assetVersionId: ID!) {
+mutation LaunchArtifactCSVExport_SDK($artifactCsvSubtype: ArtifactCSVExportSubtype!, $assetVersionId: ID!) {
     launchArtifactCSVExport(artifactCsvSubtype: $artifactCsvSubtype, assetVersionId: $assetVersionId) {
         exportJobId
     }
@@ -815,7 +784,7 @@ mutation LaunchArtifactCSVExport($artifactCsvSubtype: ArtifactCSVExportSubtype!,
 """
         elif report_type == "PDF":
             mutation = """
-mutation LaunchArtifactPDFExport($artifactPdfSubtype: ArtifactPdfExportSubtype!, $assetVersionId: ID!) {
+mutation LaunchArtifactPDFExport_SDK($artifactPdfSubtype: ArtifactPdfExportSubtype!, $assetVersionId: ID!) {
     launchArtifactPdfExport(artifactPdfSubtype: $artifactPdfSubtype, assetVersionId: $assetVersionId) {
         exportJobId
     }
@@ -825,7 +794,7 @@ mutation LaunchArtifactPDFExport($artifactPdfSubtype: ArtifactPdfExportSubtype!,
     if product_id:
         if report_type == "CSV":
             mutation = """
-mutation LaunchProductCSVExport($productCsvSubtype: ProductCSVExportSubtype!, $productId: ID!) {
+mutation LaunchProductCSVExport_SDK($productCsvSubtype: ProductCSVExportSubtype!, $productId: ID!) {
     launchProductCSVExport(productCsvSubtype: $productCsvSubtype, productId: $productId) {
         exportJobId
     }
@@ -883,7 +852,7 @@ def _create_LAUNCH_SPDX_EXPORT_VARIABLES(spdx_subtype, asset_version_id):
 
 LAUNCH_SPDX_EXPORT = {
     "mutation": """
-mutation LaunchSpdxExport($spdxSubtype: SpdxExportSubtype!, $assetVersionId: ID!) {
+mutation LaunchSpdxExport_SDK($spdxSubtype: SpdxExportSubtype!, $assetVersionId: ID!) {
   launchSpdxExport(spdxSubtype: $spdxSubtype, assetVersionId: $assetVersionId) {
     exportJobId
   }
@@ -895,7 +864,7 @@ mutation LaunchSpdxExport($spdxSubtype: SpdxExportSubtype!, $assetVersionId: ID!
 
 ONE_PRODUCT_ALL_ASSET_VERSIONS = {
     "query": """
-        query GetProductAssetVersions(
+        query GetProductAssetVersions_SDK(
             $filter: ProductFilter!,
             $after: String,
             $first: Int
@@ -921,13 +890,7 @@ ONE_PRODUCT_ALL_ASSET_VERSIONS = {
                 }
             }
         """,
-    "variables": lambda product_id: {
-        "filter": {
-            "id": product_id
-        },
-        "after": None,
-        "first": 100
-    }
+    "variables": lambda product_id: {"filter": {"id": product_id}, "after": None, "first": DEFAULT_PAGE_SIZE},
 }
 
 
@@ -956,7 +919,7 @@ def __create_UPDATE_FINDING_STATUSES_VARIABLES(user_id=None, finding_ids=None, s
 
 UPDATE_FINDING_STATUSES = {
     "mutation": """
-mutation UpdateFindingsStatuses($ids: [ID!]!, $updateStatusInput: UpdateFindingStatusesInput!, $userId: ID!) {
+mutation UpdateFindingsStatuses_SDK($ids: [ID!]!, $updateStatusInput: UpdateFindingStatusesInput!, $userId: ID!) {
     updateFindingsStatuses(ids: $ids, updateStatusInput: $updateStatusInput, userId: $userId) {
         ids
     }

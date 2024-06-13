@@ -90,8 +90,8 @@ def create_artifact(
     if not artifact_name:
         raise ValueError("Artifact name is required")
 
-    graphql_query = '''
-    mutation CreateArtifactMutation($input: CreateArtifactInput!) {
+    graphql_query = """
+    mutation CreateArtifactMutation_SDK($input: CreateArtifactInput!) {
         createArtifact(input: $input) {
             id
             name
@@ -114,7 +114,7 @@ def create_artifact(
             }
         }
     }
-    '''
+    """
 
     # Asset name, business unit context, and creating user are required
     variables = {
@@ -168,8 +168,8 @@ def create_asset(token, organization_context, business_unit_id=None, created_by_
     if not asset_name:
         raise ValueError("Asset name is required")
 
-    graphql_query = '''
-    mutation CreateAssetMutation($input: CreateAssetInput!) {
+    graphql_query = """
+    mutation CreateAssetMutation_SDK($input: CreateAssetInput!) {
         createAsset(input: $input) {
             id
             name
@@ -192,7 +192,7 @@ def create_asset(token, organization_context, business_unit_id=None, created_by_
             }
         }
     }
-    '''
+    """
 
     # Asset name, business unit context, and creating user are required
     variables = {
@@ -260,8 +260,8 @@ def create_asset_version(
     if not asset_version_name:
         raise ValueError("Asset version name is required")
 
-    graphql_query = '''
-    mutation CreateAssetVersionMutation($input: CreateAssetVersionInput!) {
+    graphql_query = """
+    mutation CreateAssetVersionMutation_SDK($input: CreateAssetVersionInput!) {
         createAssetVersion(input: $input) {
             id
             name
@@ -280,7 +280,7 @@ def create_asset_version(
             }
         }
     }
-    '''
+    """
 
     # Asset name, business unit context, and creating user are required
     variables = {
@@ -336,8 +336,8 @@ def create_asset_version_on_asset(
     if not asset_version_name:
         raise ValueError("Asset version name is required")
 
-    graphql_query = '''
-        mutation BapiCreateAssetVersion($assetVersionName: String!, $assetId: ID!, $createdByUserId: ID!) {
+    graphql_query = """
+        mutation BapiCreateAssetVersion_SDK($assetVersionName: String!, $assetId: ID!, $createdByUserId: ID!) {
             createNewAssetVersionOnAsset(assetVersionName: $assetVersionName, assetId: $assetId, createdByUserId: $createdByUserId) {
                 id
                 assetVersion {
@@ -345,7 +345,7 @@ def create_asset_version_on_asset(
                 }
             }
         }
-    '''
+    """
 
     # Asset name, business unit context, and creating user are required
     variables = {"assetVersionName": asset_version_name, "assetId": asset_id}
@@ -662,8 +662,8 @@ def create_product(token, organization_context, business_unit_id=None, created_b
     if not product_name:
         raise ValueError("Product name is required")
 
-    graphql_query = '''
-    mutation CreateProductMutation($input: CreateProductInput!) {
+    graphql_query = """
+    mutation CreateProductMutation_SDK($input: CreateProductInput!) {
         createProduct(input: $input) {
             id
             name
@@ -683,7 +683,7 @@ def create_product(token, organization_context, business_unit_id=None, created_b
             }
         }
     }
-    '''
+    """
 
     # Product name, business unit context, and creating user are required
     variables = {
@@ -781,8 +781,8 @@ def create_test(
     if not test_type:
         raise ValueError("Test type is required")
 
-    graphql_query = '''
-    mutation CreateTestMutation($input: CreateTestInput!) {
+    graphql_query = """
+    mutation CreateTestMutation_SDK($input: CreateTestInput!) {
         createTest(input: $input) {
             id
             name
@@ -814,7 +814,7 @@ def create_test(
             uploadMethod
         }
     }
-    '''
+    """
 
     # Asset name, business unit context, and creating user are required
     variables = {
@@ -1259,7 +1259,7 @@ def get_all_organizations(token, organization_context):
                                      queries.ALL_ORGANIZATIONS['variables'], 'allOrganizations')
 
 
-def get_all_paginated_results(token, organization_context, query, variables=None, field=None, limit=None):
+def get_all_paginated_results(token, organization_context, query, variables=None, field=None, limit=1000):
     """
     Get all results from a paginated GraphQL query
 
@@ -1274,8 +1274,8 @@ def get_all_paginated_results(token, organization_context, query, variables=None
             Variables to be used in the GraphQL query, by default None
         field (str, required):
             The field in the response JSON that contains the results
-        limit (int, optional):
-            The maximum number of results to return. If not provided, will return all results. By default None
+        limit (int):
+            The maximum number of results to return. By default, 1000. The limit must be less than 1000.
 
     Raises:
         Exception: If the response status code is not 200, or if the field is not in the response JSON
@@ -1286,6 +1286,12 @@ def get_all_paginated_results(token, organization_context, query, variables=None
 
     if not field:
         raise Exception("Error: field is required")
+    if limit is None:
+        raise Exception("Error: limit is required")
+    if limit > 1000:
+        raise Exception("Error: limit cannot be greater than 1000")
+    if limit < 1:
+        raise Exception("Error: limit cannot be less than 1")
 
     # query the API for the first page of results
     response_data = send_graphql_query(token, organization_context, query, variables)
@@ -1308,9 +1314,8 @@ def get_all_paginated_results(token, organization_context, query, variables=None
         cursor = response_data['data'][field][len(response_data['data'][field]) - 1]['_cursor']
 
         while cursor:
-            if limit is not None:
-                if len(results) >= limit:
-                    break
+            if len(results) >= limit:
+                break
 
             variables['after'] = cursor
 
@@ -1485,8 +1490,17 @@ def get_auth_token(client_id, client_secret, token_url=TOKEN_URL, audience=AUDIE
     return auth_token
 
 
-def get_findings(token, organization_context, asset_version_id=None, finding_id=None, category=None, status=None,
-                 severity=None, count=False, limit=None):
+def get_findings(
+    token,
+    organization_context,
+    asset_version_id=None,
+    finding_id=None,
+    category=None,
+    status=None,
+    severity=None,
+    count=False,
+    limit=1000,
+):
     """
     Gets all the Findings for an Asset Version. Uses pagination to get all results.
     Args:
@@ -1507,8 +1521,8 @@ def get_findings(token, organization_context, asset_version_id=None, finding_id=
             The severity of Findings to return. Valid values are "CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO", and "UNKNOWN". If not specified, will return all findings.
         count (bool, optional):
             If True, will return the count of findings instead of the findings themselves. Defaults to False.
-        limit (int, optional):
-            The maximum number of findings to return. If not specified, will return all findings, up to the default of 1000.
+        limit (int):
+            The maximum number of findings to return. By default, this is 1000.
 
     Raises:
         Exception: Raised if the query fails, required parameters are not specified, or parameters are incompatible.
@@ -1516,6 +1530,13 @@ def get_findings(token, organization_context, asset_version_id=None, finding_id=
     Returns:
         list: List of Finding Objects
     """
+
+    if limit is None:
+        raise Exception("Error: limit is required")
+    if limit > 1000:
+        raise Exception("Error: limit must be less than 1000")
+    if limit < 1:
+        raise Exception("Error: limit must be greater than 0")
 
     if count:
         return send_graphql_query(token, organization_context, queries.GET_FINDINGS_COUNT['query'],
@@ -1853,8 +1874,8 @@ def search_sbom(token, organization_context, name=None, version=None, asset_vers
         list: List of SoftwareComponentInstance Objects
     """
     if asset_version_id:
-        query = '''
-query GetSoftwareComponentInstances(
+        query = """
+query GetSoftwareComponentInstances_SDK(
     $filter: SoftwareComponentInstanceFilter
     $after: String
     $first: Int
@@ -1875,11 +1896,11 @@ query GetSoftwareComponentInstances(
         }
     }
 }
-'''
+"""
     else:
         # gets the asset version info that contains the software component
-        query = '''
-query GetSoftwareComponentInstances(
+        query = """
+query GetSoftwareComponentInstances_SDK(
     $filter: SoftwareComponentInstanceFilter
     $after: String
     $first: Int
@@ -1903,7 +1924,7 @@ query GetSoftwareComponentInstances(
         }
     }
 }
-'''
+"""
 
     variables = {
         "filter": {
@@ -2063,14 +2084,14 @@ def upload_file_for_binary_analysis(
         raise ValueError(f"Chunk size must be less than {MAX_CHUNK_SIZE} bytes")
 
     # Start Multi-part Upload
-    graphql_query = '''
-    mutation Start($testId: ID!) {
+    graphql_query = """
+    mutation Start_SDK($testId: ID!) {
         startMultipartUploadV2(testId: $testId) {
             uploadId
             key
         }
     }
-    '''
+    """
 
     variables = {
         "testId": test_id
@@ -2088,14 +2109,14 @@ def upload_file_for_binary_analysis(
     part_data = []
     for chunk in file_chunks(file_path, chunk_size):
         i = i + 1
-        graphql_query = '''
-        mutation GenerateUploadPartUrl($partNumber: Int!, $uploadId: ID!, $uploadKey: String!) {
+        graphql_query = """
+        mutation GenerateUploadPartUrl_SDK($partNumber: Int!, $uploadId: ID!, $uploadKey: String!) {
             generateUploadPartUrlV2(partNumber: $partNumber, uploadId: $uploadId, uploadKey: $uploadKey) {
                 key
                 uploadUrl
             }
         }
-        '''
+        """
 
         variables = {
             "partNumber": i,
@@ -2116,13 +2137,13 @@ def upload_file_for_binary_analysis(
         })
 
     # call completeMultipartUploadV2
-    graphql_query = '''
-    mutation CompleteMultipartUpload($partData: [PartInput!]!, $uploadId: ID!, $uploadKey: String!) {
+    graphql_query = """
+    mutation CompleteMultipartUpload_SDK($partData: [PartInput!]!, $uploadId: ID!, $uploadKey: String!) {
         completeMultipartUploadV2(partData: $partData, uploadId: $uploadId, uploadKey: $uploadKey) {
             key
         }
     }
-    '''
+    """
 
     variables = {
         "partData": part_data,
@@ -2142,22 +2163,22 @@ def upload_file_for_binary_analysis(
 
     # call launchBinaryUploadProcessing
     if quick_scan:
-        graphql_query = '''
-        mutation LaunchBinaryUploadProcessing($key: String!, $testId: ID!, $configurationOptions: [BinaryAnalysisConfigurationOption]) {
+        graphql_query = """
+        mutation LaunchBinaryUploadProcessing_SDK($key: String!, $testId: ID!, $configurationOptions: [BinaryAnalysisConfigurationOption]) {
             launchBinaryUploadProcessing(key: $key, testId: $testId, configurationOptions: $configurationOptions) {
                 key
             }
         }
-        '''
+        """
         variables["configurationOptions"] = ["QUICK_SCAN"]
     else:
-        graphql_query = '''
-        mutation LaunchBinaryUploadProcessing($key: String!, $testId: ID!) {
+        graphql_query = """
+        mutation LaunchBinaryUploadProcessing_SDK($key: String!, $testId: ID!) {
             launchBinaryUploadProcessing(key: $key, testId: $testId) {
                 key
             }
         }
-        '''
+        """
 
     response = send_graphql_query(token, organization_context, graphql_query, variables)
 
@@ -2191,14 +2212,14 @@ def upload_test_results_file(token, organization_context, test_id=None, file_pat
         raise ValueError("File Path is required")
 
     # Gerneate Test Result Upload URL
-    graphql_query = '''
-    mutation GenerateTestResultUploadUrl($testId: ID!) {
+    graphql_query = """
+    mutation GenerateTestResultUploadUrl_SDK($testId: ID!) {
         generateSinglePartUploadUrl(testId: $testId) {
             uploadUrl
             key
         }
     }
-    '''
+    """
 
     variables = {
         "testId": test_id
@@ -2214,13 +2235,13 @@ def upload_test_results_file(token, organization_context, test_id=None, file_pat
     upload_file_to_url(upload_url, file_path)
 
     # complete the upload
-    graphql_query = '''
-    mutation CompleteTestResultUpload($key: String!, $testId: ID!) {
+    graphql_query = """
+    mutation CompleteTestResultUpload_SDK($key: String!, $testId: ID!) {
         launchTestResultProcessing(key: $key, testId: $testId) {
             key
         }
     }
-    '''
+    """
 
     variables = {
         "testId": test_id,
