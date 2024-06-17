@@ -1259,7 +1259,7 @@ def get_all_organizations(token, organization_context):
                                      queries.ALL_ORGANIZATIONS['variables'], 'allOrganizations')
 
 
-def get_all_paginated_results(token, organization_context, query, variables=None, field=None, limit=1000):
+def get_all_paginated_results(token, organization_context, query, variables=None, field=None, limit=None):
     """
     Get all results from a paginated GraphQL query
 
@@ -1274,8 +1274,8 @@ def get_all_paginated_results(token, organization_context, query, variables=None
             Variables to be used in the GraphQL query, by default None
         field (str, required):
             The field in the response JSON that contains the results
-        limit (int):
-            The maximum number of results to return. By default, 1000. The limit must be less than 1000.
+        limit (int, Optional):
+            The maximum number of results to return. By default, None to return all results. Limit cannot be greater than 1000.
 
     Raises:
         Exception: If the response status code is not 200, or if the field is not in the response JSON
@@ -1286,18 +1286,16 @@ def get_all_paginated_results(token, organization_context, query, variables=None
 
     if not field:
         raise Exception("Error: field is required")
-    if limit is None:
-        raise Exception("Error: limit is required")
-    if limit > 1000:
+    if limit and limit > 1000:
         raise Exception("Error: limit cannot be greater than 1000")
-    if limit < 1:
+    if limit and limit < 1:
         raise Exception("Error: limit cannot be less than 1")
     if not variables["first"]:
         raise Exception("Error: first is required")
     if variables["first"] < 1:
         raise Exception("Error: first cannot be less than 1")
-    if variables["first"] > limit:
-        raise Exception("Error: limit cannot be greater than first")
+    if variables["first"] > 1000:
+        raise Exception("Error: limit cannot be greater than 1000")
 
     # query the API for the first page of results
     response_data = send_graphql_query(token, organization_context, query, variables)
@@ -1320,6 +1318,8 @@ def get_all_paginated_results(token, organization_context, query, variables=None
         cursor = response_data['data'][field][len(response_data['data'][field]) - 1]['_cursor']
 
         while cursor:
+            if limit and len(results) == limit:
+                break
 
             variables['after'] = cursor
 
@@ -1503,7 +1503,7 @@ def get_findings(
     status=None,
     severity=None,
     count=False,
-    limit=1000,
+    limit=None,
 ):
     """
     Gets all the Findings for an Asset Version. Uses pagination to get all results.
@@ -1525,8 +1525,8 @@ def get_findings(
             The severity of Findings to return. Valid values are "CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO", and "UNKNOWN". If not specified, will return all findings.
         count (bool, optional):
             If True, will return the count of findings instead of the findings themselves. Defaults to False.
-        limit (int):
-            The maximum number of findings to return. By default, this is 1000.
+        limit (int, optional):
+            The maximum number of findings to return. By default, this is None. Limit must be between 1 and 1000.
 
     Raises:
         Exception: Raised if the query fails, required parameters are not specified, or parameters are incompatible.
@@ -1535,11 +1535,9 @@ def get_findings(
         list: List of Finding Objects
     """
 
-    if limit is None:
-        raise Exception("Error: limit is required")
-    if limit > 1000:
+    if limit and limit > 1000:
         raise Exception("Error: limit must be less than 1000")
-    if limit < 1:
+    if limit and limit < 1:
         raise Exception("Error: limit must be greater than 0")
 
     if count:
