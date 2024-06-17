@@ -351,7 +351,7 @@ def _create_GET_FINDINGS_VARIABLES(asset_version_id=None, category=None, cve_id=
     # if not counting, set the pagination and ordering
     if not count:
         variables["after"] = None
-        variables["first"] = limit
+        variables["first"] = limit if limit else DEFAULT_PAGE_SIZE
         variables["orderBy"] = ["title_ASC"]
 
     if finding_id is not None:
