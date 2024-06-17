@@ -502,6 +502,7 @@ query GetFindingsForAnAssetVersion_SDK (
             cvssBaseMetricV3 {
                 cvssv3 {
                     baseScore
+                    vectorString
                 }
             }
             exploitsInfo {
