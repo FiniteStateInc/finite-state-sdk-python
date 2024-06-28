@@ -1,6 +1,6 @@
 # Finite State Python SDK RELEASE NOTES
 
-# v0.1.9
+# v0.1.12
 
 ## New Features
 
