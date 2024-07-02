@@ -1,5 +1,21 @@
 # Finite State Python SDK RELEASE NOTES
 
+# v0.1.12
+
+## New Features
+
+N/A
+
+## Bug Fixes
+
+* Uploading files of size +2GB
+* vectorString field on get_findings query
+* Queries with pages of 1000 records max. Suffix every query and mutation with "_SDK" for debugging
+
+## Breaking Changes
+
+N/A
+
 # v0.1.8
 
 ## New Features
