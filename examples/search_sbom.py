@@ -2,8 +2,6 @@ import finite_state_sdk
 import json
 import os
 
-from finite_state_sdk.token_cache import TokenCache
-
 """
 This is an example of making a query
 """
@@ -29,8 +27,7 @@ ORGANIZATION_CONTEXT = os.environ.get("ORGANIZATION_CONTEXT")
 
 # Get an auth token - this is a bearer token that you will use for all subsequent requests
 # The token is valid for 24 hours
-token_cache = TokenCache(ORGANIZATION_CONTEXT)
-token = token_cache.get_token(CLIENT_ID, CLIENT_SECRET)
+token = finite_state_sdk.get_auth_token(CLIENT_ID, CLIENT_SECRET)
 
 print('Searching for busybox with no version, case insensitive')
 sbom = finite_state_sdk.search_sbom(token, ORGANIZATION_CONTEXT, asset_version_id='123456789', name='busybox')
