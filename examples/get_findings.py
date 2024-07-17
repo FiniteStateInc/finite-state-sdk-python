@@ -1,11 +1,9 @@
 import argparse
-import datetime
 import json
 import os
 from dotenv import load_dotenv
 
 import finite_state_sdk
-from finite_state_sdk.token_cache import TokenCache
 
 
 def main():
@@ -27,8 +25,7 @@ def main():
 
     # Get an auth token - this is a bearer token that you will use for all subsequent requests
     # The token is valid for 24 hours
-    token_cache = TokenCache(ORGANIZATION_CONTEXT)
-    token = token_cache.get_token(CLIENT_ID, CLIENT_SECRET)
+    token = finite_state_sdk.get_auth_token(CLIENT_ID, CLIENT_SECRET)
 
     # Get all CVE findings for a specific asset version
     # For more info see: https://docs.finitestate.io/types/finding-category

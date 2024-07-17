@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "finite-state-sdk"
-version = "0.1.12"
+version = "0.1.13"
 authors = [
     "Finite State, Inc. <developer-tools@finitestate.io>"
 ]
@@ -64,6 +64,10 @@ toml = "^0.10.2"
 tomli = "^2.0.1"
 webencodings = "^0.5.1"
 zipp = "^3.16.2"
+python-dotenv = "^1.0.1"
+
+[tool.poetry.scripts]
+get_findings = "examples.get_findings:main"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.9.1"

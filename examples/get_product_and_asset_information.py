@@ -2,7 +2,6 @@ import finite_state_sdk
 import json
 import os
 
-from finite_state_sdk.token_cache import TokenCache
 
 """
 This is an example of getting product and asset information
@@ -29,15 +28,8 @@ ORGANIZATION_CONTEXT = os.environ.get("ORGANIZATION_CONTEXT")
 
 # Get an auth token - this is a bearer token that you will use for all subsequent requests
 # The token is valid for 24 hours
-token_cache = TokenCache(ORGANIZATION_CONTEXT)
-token = token_cache.get_token(CLIENT_ID, CLIENT_SECRET)
+token = finite_state_sdk.get_auth_token(CLIENT_ID, CLIENT_SECRET)
 
-business_units = finite_state_sdk.get_business_units(token, ORGANIZATION_CONTEXT)
-
-business_unit = business_units[0]
-
-
-print(f'Getting products for BU id {business_unit["id"]}')
 products = finite_state_sdk.get_products(token, ORGANIZATION_CONTEXT, business_unit_id='2310647013')
 print(f'Found {len(products)} products')
 

@@ -14,6 +14,10 @@ token = token_cache.get_token(CLIENT_ID, CLIENT_SECRET)
 
 
 class TokenCache():
+    """
+    A class for caching Finite State API tokens so that a new token is not required for every run of the script
+    deprecated: Use finite_state_sdk.get_auth_token instead
+    """
     def __init__(self, organization_context, client_id=None):
         self.token = None
 

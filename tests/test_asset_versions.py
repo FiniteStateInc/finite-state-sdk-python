@@ -49,7 +49,7 @@ class TestAssetVersions(TestCase):
             self.auth_token,
             self.organization_context,
             """
-        mutation BapiCreateAssetVersion($assetVersionName: String!, $assetId: ID!, $createdByUserId: ID!) {
+        mutation BapiCreateAssetVersion_SDK($assetVersionName: String!, $assetId: ID!, $createdByUserId: ID!) {
             createNewAssetVersionOnAsset(assetVersionName: $assetVersionName, assetId: $assetId, createdByUserId: $createdByUserId) {
                 id
                 assetVersion {
