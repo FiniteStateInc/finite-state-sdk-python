@@ -409,6 +409,8 @@ def create_new_asset_version_artifact_and_test_for_upload(
         raise ValueError("Version is required")
 
     assets = get_all_assets(token, organization_context, asset_id=asset_id)
+    if not assets:
+        raise ValueError("No assets found with the provided asset ID")
     asset = assets[0]
 
     # get the asset name
