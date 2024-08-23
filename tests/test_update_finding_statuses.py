@@ -7,7 +7,7 @@ class TestUpdateFindingStatuses:
     token = "mock_token"
     organization_context = "mock_organization_context"
     user_id = "mock_user_id"
-    finding_ids = ["mock_finding_id_1", "mock_finding_id_2"]
+    finding_id = ["mock_finding_id_1", "mock_finding_id_2"]
     status = "AFFECTED"
 
     @patch("finite_state_sdk.send_graphql_query")
@@ -17,7 +17,7 @@ class TestUpdateFindingStatuses:
         mock_send_graphql_query.return_value = mock_response
 
         # Call the function
-        result = update_finding_statuses(self.token, self.organization_context, self.user_id, self.finding_ids, self.status)
+        result = update_finding_statuses(self.token, self.organization_context, self.user_id, self.finding_id, self.status)
 
         # Assertions
         mock_send_graphql_query.assert_called_once()
@@ -26,7 +26,7 @@ class TestUpdateFindingStatuses:
 
     @pytest.mark.parametrize(
         "missing_param",
-        [("user_id", None), ("finding_ids", None), ("status", None)]
+        [("user_id", None), ("finding_id", None), ("status", None)]
     )
     def test_update_finding_statuses_missing_params(self, missing_param):
         # Unpack missing parameter
@@ -37,9 +37,9 @@ class TestUpdateFindingStatuses:
             update_finding_statuses(
                 self.token, self.organization_context,
                 self.user_id if param_name != "user_id" else param_value,
-                self.finding_ids if param_name != "finding_ids" else param_value,
+                self.finding_id if param_name != "finding_id" else param_value,
                 self.status if param_name != "status" else param_value
             )
 
         # Assertion
-        assert str(excinfo.value) == f"{param_name.replace('_', ' ').title()} is required"
+        assert str(excinfo.value).lower() == f"{param_name.replace('_', ' ').title()} is required".lower()

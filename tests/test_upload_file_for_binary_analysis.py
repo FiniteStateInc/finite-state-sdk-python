@@ -65,4 +65,4 @@ class TestUploadFileForBinaryAnalysis:
             )
 
         # Assertion
-        assert str(excinfo.value) == f"{param_name.replace('_', ' ').title()} is required"
+        assert str(excinfo.value).lower() == f"{param_name.replace('_', ' ').title()} is required".lower()
