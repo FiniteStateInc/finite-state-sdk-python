@@ -1,19 +1,5 @@
 # Finite State Python SDK RELEASE NOTES
 
-# v0.1.14
-
-## New Features
-
-N/A
-
-## Bug Fixes
-
-* fix bug on access to an asset data into create_new_asset_version_and_upload_binary
-
-## Breaking Changes
-
-* deprecate TokenCache. Use finite_state_sdk.get_auth_token instead
-
 # v0.1.12
 
 ## New Features
