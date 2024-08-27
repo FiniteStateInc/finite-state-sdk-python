@@ -1504,7 +1504,7 @@ def get_findings(
     severity=None,
     count=False,
     limit=None,
-    include_files=None
+    include_files=False
 ):
     """
     Gets all the Findings for an Asset Version. Uses pagination to get all results.
@@ -1868,6 +1868,8 @@ def get_software_components(token, organization_context, asset_version_id=None, 
             The type of software component to return. Valid values are "APPLICATION", "ARCHIVE", "CONTAINER", "DEVICE", "FILE", "FIRMWARE", "FRAMEWORK", "INSTALL", "LIBRARY", "OPERATING_SYSTEM", "OTHER", "SERVICE", "SOURCE". If not specified, will return all software components. See https://docs.finitestate.io/types/software-component-type
         count (bool, optional):
             If True, will return the count of software component instances instead of the software component instances themselves. Defaults to False.
+        include_files (bool, optional):
+            If True, will include the file locations associated with the software components. Defaults to False.
 
     Raises:
         Exception: Raised if the query fails, required parameters are not specified, or parameters are incompatible.
