@@ -868,11 +868,6 @@ query GetSoftwareComponentsForAnAssetVersion (
             __typename
         }
         absoluteRiskScore
-        originalComponents {
-            files {
-                path
-            }
-        }
         softwareComponent {
             id
             name
