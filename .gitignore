@@ -6,3 +6,6 @@ token.txt
 /.idea/*
 /.python-version
 /docs-generation/.python-version
+.env
+.DS_Store
+.vscode
