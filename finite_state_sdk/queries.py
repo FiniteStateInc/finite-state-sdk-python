@@ -924,23 +924,8 @@ query GetSoftwareComponentsForAnAssetVersion (
 
 
 GET_SOFTWARE_COMPONENTS = {
-    "query": lambda include_files=False: _create_GET_SOFTWARE_COMPONENTS_QUERY(include_files),
+    "query": lambda include_files=False: _create_GET_SOFTWARE_COMPONENTS_QUERY(include_files=include_files),
     "variables": lambda asset_version_id=None, type=None: _create_GET_SOFTWARE_COMPONENTS_VARIABLES(asset_version_id=asset_version_id, type=type)
-}
-
-
-GET_SOFTWARE_COMPONENTS_COUNT = {
-    "query": """
-query GetSoftwareComponentsCount (
-    $filter: SoftwareComponentInstanceFilter
-) {
-    _allSoftwareComponentInstancesMeta(filter: $filter
-    ) {
-        count
-    }
-}
-""",
-    "variables": lambda asset_version_id=None, type=None: _create_GET_SOFTWARE_COMPONENTS_VARIABLES(asset_version_id=asset_version_id, type=type, count=True)
 }
 
 
@@ -1041,15 +1026,6 @@ GET_PRODUCTS_BUSINESS_UNIT = {
         "first": DEFAULT_PAGE_SIZE,
     },
 }
-
-
-def _create_GET_SCANS_VARIABLES(scan_id=None, business_unit_id=None, date_filter=None):
-    variables = {
-        "filter": {},
-        "after": None,
-        "first": 100
-    }
-    return variables
 
 
 def _create_GET_SCANS_VARIABLES(scan_id=None, business_unit_id=None, date_filter=None):
