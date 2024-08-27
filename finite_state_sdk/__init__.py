@@ -1504,6 +1504,7 @@ def get_findings(
     severity=None,
     count=False,
     limit=None,
+    include_files=None
 ):
     """
     Gets all the Findings for an Asset Version. Uses pagination to get all results.
@@ -1527,6 +1528,8 @@ def get_findings(
             If True, will return the count of findings instead of the findings themselves. Defaults to False.
         limit (int, optional):
             The maximum number of findings to return. By default, this is None. Limit must be between 1 and 1000.
+        include_files (bool, optional):
+            If True, will include the file locations associated with the findings. Defaults to False.
 
     Raises:
         Exception: Raised if the query fails, required parameters are not specified, or parameters are incompatible.
@@ -1547,11 +1550,18 @@ def get_findings(
                                                                           status=status, severity=severity,
                                                                           limit=limit))["data"]["_allFindingsMeta"]
     else:
-        return get_all_paginated_results(token, organization_context, queries.GET_FINDINGS['query'],
-                                         queries.GET_FINDINGS['variables'](asset_version_id=asset_version_id,
-                                                                           finding_id=finding_id, category=category,
-                                                                           status=status, severity=severity,
-                                                                           limit=limit), 'allFindings', limit=limit)
+        if include_files:
+            return get_all_paginated_results(token, organization_context, queries.GET_FINDINGS_WITH_FILES['query'],
+                                             queries.GET_FINDINGS_WITH_FILES['variables'](asset_version_id=asset_version_id,
+                                                                                          finding_id=finding_id, category=category,
+                                                                                          status=status, severity=severity,
+                                                                                          limit=limit), 'allFindings', limit=limit)
+        else:
+            return get_all_paginated_results(token, organization_context, queries.GET_FINDINGS['query'],
+                                             queries.GET_FINDINGS['variables'](asset_version_id=asset_version_id,
+                                                                               finding_id=finding_id, category=category,
+                                                                               status=status, severity=severity,
+                                                                               limit=limit), 'allFindings', limit=limit)
 
 
 def get_product_asset_versions(token, organization_context, product_id=None):
@@ -1598,6 +1608,30 @@ def get_products(token, organization_context, product_id=None, business_unit_id=
                                      queries.GET_PRODUCTS['variables'](product_id=product_id,
                                                                        business_unit_id=business_unit_id),
                                      'allProducts')
+
+
+def get_scans(token, organization_context, scan_id=None, business_unit_id=None, date_filter=None) -> list:
+    """
+    Gets objects referred to as scans in the app, which are "Test" objects in the API. Uses pagination to get all results.
+    Args:
+        token (str):
+            Auth token. This is the token returned by get_auth_token(). Just the token, do not include "Bearer" in this string, that is handled inside the method.
+        organization_context (str):
+            Organization context. This is provided by the Finite State API management. It looks like "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx".
+        scan_id (str, optional):
+            Scan ID to get. If not provided, will get all scans in the organization.
+        business_unit_id (str, optional):
+            Business Unit ID to get scans for. If not provided, will get all scans in the organization.
+        date_filter (str, optional):
+            Date filter to get scans for. This is ISO 8601 formatted date, for example "2023-01-01T00:00:00.000Z".
+
+    Raises:
+        Exception: Raised if the query fails, required parameters are not specified, or parameters are incompatible.
+    Returns:
+        list: List of Test Objects
+    """
+
+    return get_all_paginated_results(token, organization_context, queries.GET_SCANS['query'], queries.GET_SCANS['variables'](scan_id=scan_id, business_unit_id=business_unit_id, date_filter=date_filter), 'allTests')
 
 
 def generate_report_download_url(token, organization_context, asset_version_id=None, product_id=None, report_type=None,
@@ -1820,7 +1854,7 @@ def generate_sbom_download_url(token, organization_context, sbom_type=None, sbom
                 return response_data['data']['generateExportDownloadPresignedUrl']['downloadLink']
 
 
-def get_software_components(token, organization_context, asset_version_id=None, type=None) -> list:
+def get_software_components(token, organization_context, asset_version_id=None, type=None, count=False, include_files=False) -> list:
     """
     Gets all the Software Components for an Asset Version. Uses pagination to get all results.
     Args:
@@ -1832,18 +1866,25 @@ def get_software_components(token, organization_context, asset_version_id=None, 
             Asset Version ID to get software components for.
         type (str, optional):
             The type of software component to return. Valid values are "APPLICATION", "ARCHIVE", "CONTAINER", "DEVICE", "FILE", "FIRMWARE", "FRAMEWORK", "INSTALL", "LIBRARY", "OPERATING_SYSTEM", "OTHER", "SERVICE", "SOURCE". If not specified, will return all software components. See https://docs.finitestate.io/types/software-component-type
+        count (bool, optional):
+            If True, will return the count of software component instances instead of the software component instances themselves. Defaults to False.
+
     Raises:
         Exception: Raised if the query fails, required parameters are not specified, or parameters are incompatible.
+
     Returns:
         list: List of Software Component Objects
     """
     if not asset_version_id:
         raise Exception("Asset Version ID is required")
 
-    return get_all_paginated_results(token, organization_context, queries.GET_SOFTWARE_COMPONENTS['query'],
-                                     queries.GET_SOFTWARE_COMPONENTS['variables'](asset_version_id=asset_version_id,
-                                                                                  type=type),
-                                     'allSoftwareComponentInstances')
+    if count:
+        return send_graphql_query(token, organization_context, queries.GET_SOFTWARE_COMPONENTS_COUNT['query'], queries.GET_SOFTWARE_COMPONENTS_COUNT['variables'](asset_version_id=asset_version_id, type=type))["data"]["_allSoftwareComponentInstancesMeta"]
+    else:
+        return get_all_paginated_results(token, organization_context, queries.GET_SOFTWARE_COMPONENTS['query'](include_files=include_files), queries.GET_SOFTWARE_COMPONENTS['variables'](asset_version_id=asset_version_id, type=type), 'allSoftwareComponentInstances')
+
+
+
 
 
 def search_sbom(token, organization_context, name=None, version=None, asset_version_id=None, search_method='EXACT',

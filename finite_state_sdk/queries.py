@@ -36,6 +36,12 @@ ALL_USERS = {
             _cursor
             id
             email
+            groups {
+                id
+                name
+            }
+            roles
+            deletedAt
             __typename
         }
     }
@@ -340,7 +346,7 @@ query GetProductAssetVersions_SDK(
 }
 
 
-def _create_GET_FINDINGS_VARIABLES(asset_version_id=None, category=None, cve_id=None, finding_id=None, status=None, severity=None, limit=1000, count=False):
+def _create_GET_FINDINGS_VARIABLES(asset_version_id=None, category=None, cve_id=None, finding_id=None, status=None, severity=None, limit=100, count=False):
     variables = {
         "filter": {
             "mergedFindingRefId": None,
@@ -466,6 +472,139 @@ query GetFindingsForAnAssetVersion_SDK (
             version
             __typename
         }
+        linkedFindingHash
+        sourceTypes
+        category
+        subcategory
+        regression
+        currentStatus {
+            comment
+            createdAt
+            createdBy {
+                id
+                email
+                __typename
+            }
+            id
+            justification
+            responses
+            status
+            updatedAt
+            __typename
+        }
+        cwes {
+            id
+            cweId
+            name
+            __typename
+        }
+        cves {
+            id
+            cveId
+            epss {
+                epssPercentile
+                epssScore
+            }
+            cvssScore
+            cvssBaseMetricV3 {
+                cvssv3 {
+                    baseScore
+                    vectorString
+                }
+            }
+            exploitsInfo {
+                exploitProofOfConcept
+                reportedInTheWild
+                weaponized
+                exploitedByNamedThreatActors
+                exploitedByBotnets
+                exploitedByRansomware
+                exploits {
+                    id
+                    __typename
+                }
+                __typename
+            }
+            __typename
+        }
+        origin
+        originalFindings {
+            id
+            vulnIdFromTool
+            origin
+            cvssScore
+            cvssSeverity
+            __typename
+        }
+        originalFindingsSources {
+            id
+            name
+            __typename
+        }
+        test {
+            id
+            tools {
+                id
+                name
+                __typename
+            }
+            __typename
+        }
+        __typename
+    }
+}""",
+    "variables": lambda asset_version_id=None, category=None, cve_id=None, finding_id=None, status=None, severity=None, limit=None: _create_GET_FINDINGS_VARIABLES(asset_version_id=asset_version_id, category=category, cve_id=cve_id, finding_id=finding_id, severity=severity, status=status, limit=limit)
+}
+
+GET_FINDINGS_WITH_FILES = {
+    "query": """
+query GetFindingsForAnAssetVersion_SDK (
+    $filter: FindingFilter,
+    $after: String,
+    $first: Int,
+    $orderBy: [FindingOrderBy!]
+) {
+    allFindings(filter: $filter,
+                after: $after,
+                first: $first,
+                orderBy: $orderBy
+    ) {
+        _cursor
+        id
+        title
+        date
+        createdAt
+        updatedAt
+        deletedAt
+        cvssScore
+        cvssSeverity
+        vulnIdFromTool
+        description
+        severity
+        riskScore
+        affects {
+            id
+            name
+            version
+            files {
+                path
+            }
+            originalComponents {
+                files {
+                    path
+                }
+            }
+            __typename
+        }
+        currentStatus {
+            createdBy {
+                id
+                email
+            }
+            status
+            justification
+        }
+        linkedFindingHash
         sourceTypes
         category
         subcategory
@@ -550,7 +689,7 @@ query GetFindingsForAnAssetVersion_SDK (
 }
 
 
-def _create_GET_SOFTWARE_COMPONENTS_VARIABLES(asset_version_id=None, type=None):
+def _create_GET_SOFTWARE_COMPONENTS_VARIABLES(asset_version_id=None, type=None, count=False):
     variables = {
         "filter": {
             "mergedComponentRefId": None,
@@ -570,9 +709,10 @@ def _create_GET_SOFTWARE_COMPONENTS_VARIABLES(asset_version_id=None, type=None):
     return variables
 
 
-GET_SOFTWARE_COMPONENTS = {
-    "query": """
-query GetSoftwareComponentsForAnAssetVersion_SDK (
+def _create_GET_SOFTWARE_COMPONENTS_QUERY(include_files=False):
+    if include_files:
+        return """
+query GetSoftwareComponentsForAnAssetVersion (
     $filter: SoftwareComponentInstanceFilter,
     $after: String,
     $first: Int,
@@ -613,6 +753,14 @@ query GetSoftwareComponentsForAnAssetVersion_SDK (
             __typename
         }
         absoluteRiskScore
+        files {
+            path
+        }
+        originalComponents {
+            files {
+                path
+            }
+        }
         softwareComponent {
             id
             name
@@ -638,6 +786,121 @@ query GetSoftwareComponentsForAnAssetVersion_SDK (
         supplier {
             name
         }
+        originalComponents {
+            name
+            version
+            files {
+                path
+                name
+            }
+        }
+        currentStatus {
+            id
+            status
+            comment
+            createdBy {
+                email
+            }
+            __typename
+        }
+        test {
+            name
+            tools {
+                name
+            }
+        }
+        files {
+            path
+            name
+            hashes {
+                alg
+                content
+            }
+        }
+        origin
+        __typename
+    }
+}
+"""
+    else:
+        return """
+query GetSoftwareComponentsForAnAssetVersion (
+    $filter: SoftwareComponentInstanceFilter,
+    $after: String,
+    $first: Int,
+    $orderBy: [SoftwareComponentInstanceOrderBy!]
+) {
+    allSoftwareComponentInstances(filter: $filter,
+                                  after: $after,
+                                  first: $first,
+                                  orderBy: $orderBy
+    ) {
+        _cursor
+        _findingsMeta {
+            count
+        }
+        id
+        name
+        type
+        version
+        hashes {
+            alg
+            content
+        }
+        author
+        licenses {
+            id
+            name
+            copyLeft
+            isFsfLibre
+            isOsiApproved
+            url
+            __typename
+        }
+        copyrights {
+            name
+            text
+            url
+        }
+        softwareIdentifiers {
+            cpes
+            purl
+            __typename
+        }
+        absoluteRiskScore
+        originalComponents {
+            files {
+                path
+            }
+        }
+        softwareComponent {
+            id
+            name
+            version
+            type
+            url
+            licenses {
+                id
+                name
+                copyLeft
+                isFsfLibre
+                isOsiApproved
+                url
+                __typename
+            }
+            softwareIdentifiers {
+                cpes
+                purl
+                __typename
+            }
+            __typename
+        }
+        supplier {
+            name
+        }
+        releaseDate
+        summaryDescription
+        updatedAt
         currentStatus {
             id
             status
@@ -657,8 +920,42 @@ query GetSoftwareComponentsForAnAssetVersion_SDK (
         __typename
     }
 }
-""",
+"""
+
+
+GET_SOFTWARE_COMPONENTS = {
+    "query": lambda include_files=False: _create_GET_SOFTWARE_COMPONENTS_QUERY(include_files),
     "variables": lambda asset_version_id=None, type=None: _create_GET_SOFTWARE_COMPONENTS_VARIABLES(asset_version_id=asset_version_id, type=type)
+}
+
+
+GET_SOFTWARE_COMPONENTS_COUNT = {
+    "query": """
+query GetSoftwareComponentsCount (
+    $filter: SoftwareComponentInstanceFilter
+) {
+    _allSoftwareComponentInstancesMeta(filter: $filter
+    ) {
+        count
+    }
+}
+""",
+    "variables": lambda asset_version_id=None, type=None: _create_GET_SOFTWARE_COMPONENTS_VARIABLES(asset_version_id=asset_version_id, type=type, count=True)
+}
+
+
+GET_SOFTWARE_COMPONENTS_COUNT = {
+    "query": """
+query GetSoftwareComponentsCount (
+    $filter: SoftwareComponentInstanceFilter
+) {
+    _allSoftwareComponentInstancesMeta(filter: $filter
+    ) {
+        count
+    }
+}
+""",
+    "variables": lambda asset_version_id=None, type=None: _create_GET_SOFTWARE_COMPONENTS_VARIABLES(asset_version_id=asset_version_id, type=type, count=True)
 }
 
 
@@ -743,6 +1040,111 @@ GET_PRODUCTS_BUSINESS_UNIT = {
         "after": None,
         "first": DEFAULT_PAGE_SIZE,
     },
+}
+
+
+def _create_GET_SCANS_VARIABLES(scan_id=None, business_unit_id=None, date_filter=None):
+    variables = {
+        "filter": {},
+        "after": None,
+        "first": 100
+    }
+    return variables
+
+
+def _create_GET_SCANS_VARIABLES(scan_id=None, business_unit_id=None, date_filter=None):
+    variables = {
+        "filter": {},
+        "after": None,
+        "first": 100
+    }
+
+    if scan_id:
+        variables["filter"]["id"] = scan_id
+
+    if business_unit_id:
+        variables["filter"]["group"] = {
+            "id": business_unit_id
+        }
+
+    if date_filter:
+        # TODO: make this smarter and more flexible
+        variables["filter"]["createdAt_gte"] = date_filter
+
+    return variables
+
+
+GET_SCANS = {
+    "query": """
+query AllTestsForScanPage(
+  $filter: TestFilter!
+  $orderBy: [TestOrderBy!]
+  $after: String
+  $skip: Int
+  $first: Int
+) {
+  allTests(
+    filter: $filter
+    orderBy: $orderBy
+    after: $after
+    skip: $skip
+    first: $first
+  ) {
+    _cursor
+    id
+    name
+    testResultFileLink
+    tools {
+      id
+      name
+      __typename
+    }
+    artifactUnderTest {
+      id
+      name
+      fsanId
+      assetVersion {
+        id
+        name
+        asset {
+          id
+          name
+          group {
+            name
+          }
+          __typename
+        }
+        __typename
+      }
+      __typename
+    }
+    createdAt
+    createdBy {
+      id
+      email
+      __typename
+    }
+    state {
+      id
+      created
+      requestedDateTime
+      completedDateTime
+      lastUpdated
+      errorMessage
+      originalFilename
+      status
+      statusMessage
+      __typename
+    }
+    ctx {
+      businessUnits
+      __typename
+    }
+    __typename
+  }
+}
+""",
+    "variables": lambda scan_id=None, business_unit_id=None, date_filter=None: _create_GET_SCANS_VARIABLES(scan_id=scan_id, business_unit_id=business_unit_id, date_filter=date_filter)
 }
 
 
