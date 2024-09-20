@@ -308,6 +308,7 @@ def create_asset_version_on_asset(
     created_by_user_id=None,
     asset_id=None,
     asset_version_name=None,
+    product_id=None,
 ):
     """
     Create a new Asset Version.
@@ -337,8 +338,8 @@ def create_asset_version_on_asset(
         raise ValueError("Asset version name is required")
 
     graphql_query = """
-        mutation BapiCreateAssetVersion_SDK($assetVersionName: String!, $assetId: ID!, $createdByUserId: ID!) {
-            createNewAssetVersionOnAsset(assetVersionName: $assetVersionName, assetId: $assetId, createdByUserId: $createdByUserId) {
+        mutation BapiCreateAssetVersion_SDK($assetVersionName: String!, $assetId: ID!, $createdByUserId: ID!, $productId: ID) {
+            createNewAssetVersionOnAsset(assetVersionName: $assetVersionName, assetId: $assetId, createdByUserId: $createdByUserId, productId: $productId) {
                 id
                 assetVersion {
                     id
@@ -352,6 +353,9 @@ def create_asset_version_on_asset(
 
     if created_by_user_id:
         variables["createdByUserId"] = created_by_user_id
+
+    if product_id:
+        variables["productId"] = product_id
 
     response = send_graphql_query(token, organization_context, graphql_query, variables)
     return response['data']
@@ -437,7 +441,7 @@ def create_new_asset_version_artifact_and_test_for_upload(
 
     # create the asset version
     response = create_asset_version_on_asset(
-        token, organization_context, created_by_user_id=created_by_user_id, asset_id=asset_id, asset_version_name=version
+        token, organization_context, created_by_user_id=created_by_user_id, asset_id=asset_id, asset_version_name=version, product_id=product_id
     )
     # get the asset version ID
     asset_version_id = response['createNewAssetVersionOnAsset']['assetVersion']['id']
