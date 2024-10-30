@@ -2173,23 +2173,27 @@ def upload_file_for_binary_analysis(
     }
 
     # call launchBinaryUploadProcessing
-    if quick_scan:
+    if quick_scan or enable_bandit_scan:
         graphql_query = """
         mutation LaunchBinaryUploadProcessing_SDK($key: String!, $testId: ID!, $configurationOptions: [BinaryAnalysisConfigurationOption]) {
             launchBinaryUploadProcessing(key: $key, testId: $testId, configurationOptions: $configurationOptions) {
                 key
+                newBanditScanId
             }
         }
         """
-        variables["configurationOptions"] = ["QUICK_SCAN"]
     else:
         graphql_query = """
         mutation LaunchBinaryUploadProcessing_SDK($key: String!, $testId: ID!) {
             launchBinaryUploadProcessing(key: $key, testId: $testId) {
                 key
+                newBanditScanId
             }
         }
         """
+
+    if quick_scan:
+        variables["configurationOptions"] = ["QUICK_SCAN"]
 
     if enable_bandit_scan:
         config_options = variables.get("configurationOptions", [])
