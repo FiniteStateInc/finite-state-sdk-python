@@ -503,6 +503,7 @@ def create_new_asset_version_and_upload_binary(
     artifact_description=None,
     quick_scan=False,
     upload_method: UploadMethod = UploadMethod.API,
+    enable_bandit_scan: bool = False,
 ):
     """
     Creates a new Asset Version for an existing asset, and uploads a binary file for Finite State Binary Analysis.
@@ -531,6 +532,8 @@ def create_new_asset_version_and_upload_binary(
             If True, will upload the file for quick scan. Defaults to False (Full Scan). For details about Quick Scan vs Full Scan, please see the API documentation.
         upload_method (UploadMethod, optional):
             The method of uploading the test results. Default is UploadMethod.API.
+        enable_bandit_scan (bool, optional):
+            If True, will create an additional bandit scan in addition to the default binary analysis scan.
 
     Raises:
         ValueError: Raised if asset_id, version, or file_path are not provided.
@@ -564,7 +567,7 @@ def create_new_asset_version_and_upload_binary(
 
     # upload file for binary test
     response = upload_file_for_binary_analysis(token, organization_context, test_id=binary_test_id, file_path=file_path,
-                                               quick_scan=quick_scan)
+                                               quick_scan=quick_scan, enable_bandit_scan=enable_bandit_scan)
     return response
 
 
@@ -2054,7 +2057,7 @@ def update_finding_statuses(token, organization_context, user_id=None, finding_i
 
 
 def upload_file_for_binary_analysis(
-    token, organization_context, test_id=None, file_path=None, chunk_size=DEFAULT_CHUNK_SIZE, quick_scan=False
+    token, organization_context, test_id=None, file_path=None, chunk_size=DEFAULT_CHUNK_SIZE, quick_scan=False, enable_bandit_scan: bool = False
 ):
     """
     Upload a file for Binary Analysis. Will automatically chunk the file into chunks and upload each chunk.
@@ -2073,6 +2076,8 @@ def upload_file_for_binary_analysis(
             The size of the chunks to read. 1000 MiB by default. Min 5MiB and max 2GiB.
         quick_scan (bool, optional):
             If True, will perform a quick scan of the Binary. Defaults to False (Full Scan). For details, please see the API documentation.
+        enable_bandit_scan (bool, optional):
+            If True, will create an additional bandit scan in addition to the default binary analysis scan.
 
     Raises:
         ValueError: Raised if test_id or file_path are not provided.
@@ -2170,23 +2175,32 @@ def upload_file_for_binary_analysis(
     }
 
     # call launchBinaryUploadProcessing
-    if quick_scan:
+    if quick_scan or enable_bandit_scan:
         graphql_query = """
         mutation LaunchBinaryUploadProcessing_SDK($key: String!, $testId: ID!, $configurationOptions: [BinaryAnalysisConfigurationOption]) {
             launchBinaryUploadProcessing(key: $key, testId: $testId, configurationOptions: $configurationOptions) {
                 key
+                newBanditScanId
             }
         }
         """
-        variables["configurationOptions"] = ["QUICK_SCAN"]
     else:
         graphql_query = """
         mutation LaunchBinaryUploadProcessing_SDK($key: String!, $testId: ID!) {
             launchBinaryUploadProcessing(key: $key, testId: $testId) {
                 key
+                newBanditScanId
             }
         }
         """
+
+    if quick_scan:
+        variables["configurationOptions"] = ["QUICK_SCAN"]
+
+    if enable_bandit_scan:
+        config_options = variables.get("configurationOptions", [])
+        config_options.append("ENABLE_BANDIT_SCAN")
+        variables["configurationOptions"] = config_options
 
     response = send_graphql_query(token, organization_context, graphql_query, variables)
 
