@@ -2076,6 +2076,8 @@ def upload_file_for_binary_analysis(
             The size of the chunks to read. 1000 MiB by default. Min 5MiB and max 2GiB.
         quick_scan (bool, optional):
             If True, will perform a quick scan of the Binary. Defaults to False (Full Scan). For details, please see the API documentation.
+        enable_bandit_scan (bool, optional):
+            If True, will create an additional bandit scan in addition to the default binary analysis scan.
 
     Raises:
         ValueError: Raised if test_id or file_path are not provided.
