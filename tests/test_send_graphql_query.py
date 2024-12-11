@@ -82,6 +82,8 @@ class TestSendGraphQLQuery:
         # Check the inner exception message
         inner_exception = excinfo.value.last_attempt.exception()
         assert "Error: 500 - Internal Server Error" in str(inner_exception)
+        # Assert it was called exactly 5 times because of the retries
+        assert mock_post.call_count == 5
 
     @patch("finite_state_sdk.requests.post")
     def test_send_graphql_query_mutation_success(self, mock_post):
@@ -127,8 +129,9 @@ class TestSendGraphQLQuery:
         mock_response.json.return_value = {"error": "Internal Server Error"}
         mock_post.return_value = mock_response
 
-        # Call the function and expect a RetryError
+        # Call the function and expect a BreakoutException since it's a mutation
         with pytest.raises(BreakoutException) as excinfo:
             send_graphql_query(self.token, self.organization_context, self.mutation, {})
 
         assert "Error: 500 - Internal Server Error" in str(excinfo.value)
+        mock_post.assert_called_once()
