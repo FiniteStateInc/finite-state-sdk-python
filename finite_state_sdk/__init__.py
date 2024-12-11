@@ -5,6 +5,12 @@ import requests
 import time
 from warnings import warn
 import finite_state_sdk.queries as queries
+from tenacity import retry, retry_if_exception, stop_after_attempt, wait_fixed
+from finite_state_sdk.utils import (
+    BreakoutException,
+    is_mutation,
+    is_not_breakout_exception,
+)
 
 API_URL = 'https://platform.finitestate.io/api/v1/graphql'
 AUDIENCE = "https://platform.finitestate.io/api/v1/graphql"
@@ -1968,6 +1974,7 @@ query GetSoftwareComponentInstances_SDK(
     return records
 
 
+@retry(stop=stop_after_attempt(10), wait=wait_fixed(10), retry=retry_if_exception(is_not_breakout_exception))
 def send_graphql_query(token, organization_context, query, variables=None):
     """
     Send a GraphQL query to the API
@@ -1989,26 +1996,27 @@ def send_graphql_query(token, organization_context, query, variables=None):
         dict: Response JSON
     """
     headers = {
-        'Content-Type': 'application/json',
-        'Authorization': f'Bearer {token}',
-        'Organization-Context': organization_context
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {token}",
+        "Organization-Context": organization_context,
     }
-    data = {
-        'query': query,
-        'variables': variables
-    }
+    data = {"query": query, "variables": variables}
 
     response = requests.post(API_URL, headers=headers, json=data)
-
     if response.status_code == 200:
         thejson = response.json()
 
         if "errors" in thejson:
-            raise Exception(f"Error: {thejson['errors']}")
+            # Raise a BreakoutException for GraphQL errors
+            raise BreakoutException(f"Error: {thejson['errors']}")
 
         return thejson
     else:
-        raise Exception(f"Error: {response.status_code} - {response.text}")
+        is_mutation_operation = is_mutation(query)
+        if is_mutation_operation:
+            raise BreakoutException(f"Error: {response.status_code} - {response.text}")
+        else:
+            raise Exception(f"Error: {response.status_code} - {response.text}")
 
 
 def update_finding_statuses(token, organization_context, user_id=None, finding_ids=None, status=None,
