@@ -1974,7 +1974,7 @@ query GetSoftwareComponentInstances_SDK(
     return records
 
 
-@retry(stop=stop_after_attempt(10), wait=wait_fixed(10), retry=retry_if_exception(is_not_breakout_exception))
+@retry(stop=stop_after_attempt(5), wait=wait_fixed(5), retry=retry_if_exception(is_not_breakout_exception))
 def send_graphql_query(token, organization_context, query, variables=None):
     """
     Send a GraphQL query to the API
