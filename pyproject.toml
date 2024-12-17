@@ -65,6 +65,8 @@ tomli = "^2.0.1"
 webencodings = "^0.5.1"
 zipp = "^3.16.2"
 python-dotenv = "^1.0.1"
+gql = "^3.5.0"
+tenacity = "^9.0.0"
 
 [tool.poetry.scripts]
 get_findings = "examples.get_findings:main"
