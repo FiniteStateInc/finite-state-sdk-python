@@ -188,6 +188,7 @@ def compare_sw_components(sw_components_fw1, sw_components_fw2, verbose=False):
 
     # TODO: add CVE information for software to be able to add additional context like "High Risk Components Added"
 
+    updated_versions = []
     # for each software component in version 1, check if it is in version 2
     already_found_list = []
     for sw_name in sw1_name_versions_map:
@@ -220,6 +221,7 @@ def compare_sw_components(sw_components_fw1, sw_components_fw2, verbose=False):
                             pass
                         else:
                             sw_component_changes.append({'action': 'UPDATED', 'name': sw_name, 'name2': matching_sw2_version_name, 'version1': version1, 'version2': version2})
+                            updated_versions.append(f"{sw_name} {version2}")
 
     already_found_list = []
     for sw_name in sw2_name_versions_map:
@@ -241,7 +243,11 @@ def compare_sw_components(sw_components_fw1, sw_components_fw2, verbose=False):
         else:
             # compare the versions
             for version2 in sw2_name_versions_map[sw_name]:
+                if f"{sw_name} {version2}" in updated_versions:
+                    continue
+
                 if matching_sw1_version_name not in sw1_name_versions_map:
+                    # check the software component changes to see if there is alrady an entry for "updated", if so don't add it
                     sw_component_changes.append({'action': 'ADDED', 'name': sw_name, 'version2': version2})
                     if verbose:
                         print(f"ADDED: {sw_name} {version2} because versions didn't match")
@@ -261,7 +267,8 @@ def compare_sw_components(sw_components_fw1, sw_components_fw2, verbose=False):
                                     sw_component_changes.append({'action': 'UPDATED', 'name': matching_sw1_version_name, 'name2': sw_name, 'version1': version1, 'version2': version2})
                                 else:
                                     sw_component_changes.append({'action': 'ADDED', 'name': sw_name, 'version2': version2})
-                                    print(f"ADDED: {sw_name} {version2} because semver.compare({version1}, {version2}) < 0")
+                                    if verbose:
+                                        print(f"ADDED: {sw_name} {version2} because semver.compare({version1}, {version2}) < 0")
                             except Exception:
                                 sw_component_changes.append({'action': 'UPDATED', 'name': matching_sw1_version_name, 'name2': sw_name, 'version1': version1, 'version2': version2})
 
@@ -320,7 +327,7 @@ def main():
 
         cve_changes_filename = f'{dt_str}-{asset_version_1[0]["asset"]["name"]}-{asset_version_1[0]["name"]}-to-{asset_version_2[0]["name"]}-cve_changes.csv'
         # replace filename spaces with underscores
-        cve_changes_filename = cve_changes_filename.replace(' ', '_')
+        cve_changes_filename = cve_changes_filename.replace(' ', '_').replace('/', '_').replace(':', '_')
         with open(cve_changes_filename, 'w') as f:
             # write header
             f.write('action,cve_id,name,version,cvssSeverity,cvssScore\n')
@@ -356,7 +363,7 @@ def main():
     # output all software components for each version to a csv file
     sw_components_filename1 = f'{dt_str}-{asset_version_1[0]["asset"]["name"]}-{asset_version_1[0]["name"]}-sw_components.csv'
     # replace filename spaces with underscores
-    sw_components_filename1 = sw_components_filename1.replace(' ', '_')
+    sw_components_filename1 = sw_components_filename1.replace(' ', '_').replace('/', '_').replace(':', '_')
     # replace parentheses with underscores
     sw_components_filename1 = sw_components_filename1.replace('(', '_')
     sw_components_filename1 = sw_components_filename1.replace(')', '_')
@@ -372,7 +379,7 @@ def main():
 
     sw_components_filename2 = f'{dt_str}-{asset_version_2[0]["asset"]["name"]}-{asset_version_2[0]["name"]}-sw_components.csv'
     # replace filename spaces with underscores
-    sw_components_filename2 = sw_components_filename2.replace(' ', '_')
+    sw_components_filename2 = sw_components_filename2.replace(' ', '_').replace('/', '_').replace(':', '_')
     # replace parentheses with underscores
     sw_components_filename2 = sw_components_filename2.replace('(', '_')
     sw_components_filename2 = sw_components_filename2.replace(')', '_')
@@ -398,7 +405,7 @@ def main():
 
     sw_changes_filename = f'{dt_str}-{asset_version_1[0]["asset"]["name"]}-{asset_version_1[0]["name"]}-to-{asset_version_2[0]["name"]}-sw_component_changes.csv'
     # replace filename spaces with underscores
-    sw_changes_filename = sw_changes_filename.replace(' ', '_')
+    sw_changes_filename = sw_changes_filename.replace(' ', '_').replace('/', '_').replace(':', '_')
     with open(sw_changes_filename, 'w') as f:
         # write header
         f.write('action,name,version1,version2\n')
@@ -462,7 +469,7 @@ def main():
     # write a csv file
     sw_changes_interleaved_filename = f'{dt_str}-{asset_version_1[0]["asset"]["name"]}-{asset_version_1[0]["name"]}-to-{asset_version_2[0]["name"]}-sw_changes_interleaved.csv'
     # replace filename spaces with underscores
-    sw_changes_interleaved_filename = sw_changes_interleaved_filename.replace(' ', '_')
+    sw_changes_interleaved_filename = sw_changes_interleaved_filename.replace(' ', '_').replace('/', '_').replace(':', '_')
     with open(sw_changes_interleaved_filename, 'w') as f:
         # write header
         f.write('action,name,name2,version1,version2\n')
