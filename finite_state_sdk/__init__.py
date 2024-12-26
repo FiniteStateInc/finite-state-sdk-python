@@ -218,6 +218,34 @@ def create_asset(token, organization_context, business_unit_id=None, created_by_
     response = send_graphql_query(token, organization_context, graphql_query, variables)
     return response['data']
 
+"""
+    Call updateAsset to set the defaultVersion to the newly created AssetVersion
+"""
+def update_asset(token, organization_context, asset_id, asset_version_id):
+    graphql_query = '''
+    mutation UpdateAssetMutation($input: UpdateAssetInput!) {
+        updateAsset(input: $input) {
+            id
+            name
+            defaultVersion {
+                id
+            }
+            versions {
+                id
+            }
+        }
+    }
+    '''
+
+    variables = {
+        "input": {
+            "id": asset_id,
+            "defaultVersion": asset_version_id
+        }
+    }
+
+    response = send_graphql_query(token, organization_context, graphql_query, variables)
+    return response['data']
 
 def create_asset_version(
     token,
@@ -305,6 +333,11 @@ def create_asset_version(
         variables["input"]["ctx"]["products"] = product_id
 
     response = send_graphql_query(token, organization_context, graphql_query, variables)
+
+    if response.ok:
+        asset_version_id = response['data']['createAssetVersion']['id']
+        update_asset(token, organization_context, asset_id, asset_version_id)
+
     return response['data']
 
 
