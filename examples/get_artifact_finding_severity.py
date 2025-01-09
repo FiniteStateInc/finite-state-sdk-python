@@ -24,7 +24,7 @@ $ python get_artifact_finding_severity.py --secrets-file .secrets --asset-versio
 DEFAULT_PAGE_SIZE = 100
 
 
-def _create_GET_FINDINGS_VARIABLES(asset_version_id=None, category=None, cve_id=None, finding_id=None, status=None, severity=None, severity_type="CVSS", limit=100, count=False):
+def _create_GET_FINDINGS_VARIABLES(asset_version_id=None, category=None, cve_id=None, finding_id=None, status=None, status_not=None, severity=None, severity_type="CVSS", limit=100, count=False):
     variables = {
         "filter": {
             "mergedFindingRefId": None,
@@ -108,6 +108,13 @@ def _create_GET_FINDINGS_VARIABLES(asset_version_id=None, category=None, cve_id=
             ]
         }
 
+    if status_not is not None:
+        variables["filter"]["currentStatus"] = {
+            "status_not_in": [
+                status_not
+            ]
+        }
+
     return variables
 
 
@@ -121,10 +128,10 @@ query GetFindingsCount_SDK($filter: FindingFilter)
 }
 """
 
-    critical_count = finite_state_sdk.send_graphql_query(token, organization_context, query, _create_GET_FINDINGS_VARIABLES(asset_version_id=asset_version_id, category=category, severity="CRITICAL", severity_type=severity_type, count=True))["data"]["_allFindingsMeta"]["count"]
-    high_count = finite_state_sdk.send_graphql_query(token, organization_context, query, _create_GET_FINDINGS_VARIABLES(asset_version_id=asset_version_id, category=category, severity="HIGH", severity_type=severity_type, count=True))["data"]["_allFindingsMeta"]["count"]
-    medium_count = finite_state_sdk.send_graphql_query(token, organization_context, query, _create_GET_FINDINGS_VARIABLES(asset_version_id=asset_version_id, category=category, severity="MEDIUM", severity_type=severity_type, count=True))["data"]["_allFindingsMeta"]["count"]
-    low_count = finite_state_sdk.send_graphql_query(token, organization_context, query, _create_GET_FINDINGS_VARIABLES(asset_version_id=asset_version_id, category=category, severity="LOW", severity_type=severity_type, count=True))["data"]["_allFindingsMeta"]["count"]
+    critical_count = finite_state_sdk.send_graphql_query(token, organization_context, query, _create_GET_FINDINGS_VARIABLES(asset_version_id=asset_version_id, category=category, severity="CRITICAL", severity_type=severity_type, status_not="NOT_AFFECTED", count=True))["data"]["_allFindingsMeta"]["count"]
+    high_count = finite_state_sdk.send_graphql_query(token, organization_context, query, _create_GET_FINDINGS_VARIABLES(asset_version_id=asset_version_id, category=category, severity="HIGH", severity_type=severity_type, status_not="NOT_AFFECTED", count=True))["data"]["_allFindingsMeta"]["count"]
+    medium_count = finite_state_sdk.send_graphql_query(token, organization_context, query, _create_GET_FINDINGS_VARIABLES(asset_version_id=asset_version_id, category=category, severity="MEDIUM", severity_type=severity_type, status_not="NOT_AFFECTED", count=True))["data"]["_allFindingsMeta"]["count"]
+    low_count = finite_state_sdk.send_graphql_query(token, organization_context, query, _create_GET_FINDINGS_VARIABLES(asset_version_id=asset_version_id, category=category, severity="LOW", severity_type=severity_type, status_not="NOT_AFFECTED", count=True))["data"]["_allFindingsMeta"]["count"]
 
     return critical_count, high_count, medium_count, low_count
 
