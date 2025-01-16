@@ -7,9 +7,7 @@ from dotenv import load_dotenv
 from time import sleep
 
 import sys
-sys.path.append('..')
 import finite_state_sdk
-
 
 def get_license_types(licenses) -> str:
     try:
