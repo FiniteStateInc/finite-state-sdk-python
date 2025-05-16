@@ -58,3 +58,27 @@ How to programmatically upload test results (e.g. SBOMs or Third Party Scanners)
 # uploading_a_binary.py
 
 How to programmatically upload a binary image (e.g. a firmware or system image). Basically a one-liner you can add to your CI systems.
+
+# Report Scripts
+
+The following scripts provide various reporting capabilities for analyzing security data:
+
+## report_asset_version_comparison.py
+Compares different versions of each asset, focusing on vulnerability counts and risk scores. Useful for tracking security improvements or regressions across versions.
+
+## report_asset_risk_scores.py
+Analyzes and reports risk scores for different assets, helping identify high-risk assets that need attention.
+
+## report_vulnerability_severity_trends.py
+Tracks and reports trends in vulnerability severity over time, helping identify patterns in security issues.
+
+## report_vulnerabilities_over_time.py
+Reports on vulnerabilities per asset version over time, providing a historical view of security issues.
+
+## report_assets_over_time.py
+Tracks and reports on assets over time, including changes or updates to asset configurations.
+
+## report_uploads_over_time.py
+Reports on uploads over time, including frequency and types of uploads, helping track asset version management.
+
+For detailed information about each report, including setup instructions and usage examples, please see the [Reports README](reports_README.md).

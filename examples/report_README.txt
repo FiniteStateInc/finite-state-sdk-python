@@ -1,3 +1,6 @@
+
+
+
 report_asset_version_comparison.py:
 Compares different versions of each asset, focusing on vulnerability counts and risk scores.
 Outputs a CSV file with Asset Name, Version, Risk Score, and Vulnerabilities.
