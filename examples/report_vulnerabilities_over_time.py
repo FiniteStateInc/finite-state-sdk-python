@@ -15,23 +15,38 @@ import finite_state_sdk
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Report on vulnerabilities per asset version.')
-    parser.add_argument('--secrets-file', required=True, help='Path to the secrets file')
-    parser.add_argument('--csv', nargs='?', const='vulnerabilities_report.csv', help='Export the report to a CSV file (default: vulnerabilities_report.csv)')
+    parser.add_argument('--secrets-file', help='Path to the secrets file (only required if .env not found in working directory)')
+    parser.add_argument('--csv', nargs='?', const='vulnerabilities_over_time.csv', help='Export the report to a CSV file (default: vulnerabilities_over_time.csv)')
     parser.add_argument('--debug', action='store_true', help='Print debug information about the API response')
     return parser.parse_args()
 
 def main():
     args = parse_args()
-    load_dotenv(args.secrets_file)
-    token = finite_state_sdk.get_auth_token(
-        os.getenv('CLIENT_ID'),
-        os.getenv('CLIENT_SECRET')
-    )
-    org_ctx = os.getenv('ORGANIZATION_CONTEXT')
+    
+    # Try to load .env from working directory first
+    if not args.secrets_file and os.path.exists('.env'):
+        load_dotenv('.env')
+    elif args.secrets_file:
+        load_dotenv(args.secrets_file)
+    else:
+        print("Error: No .env file found in working directory and no --secrets-file specified")
+        sys.exit(1)
 
-    # Get all asset versions
-    print("\nFetching asset versions...")
-    asset_versions = finite_state_sdk.get_all_asset_versions(token, org_ctx)
+    # Get environment variables
+    CLIENT_ID = os.environ.get("CLIENT_ID")
+    CLIENT_SECRET = os.environ.get("CLIENT_SECRET")
+    ORGANIZATION_CONTEXT = os.environ.get("ORGANIZATION_CONTEXT")
+
+    if not all([CLIENT_ID, CLIENT_SECRET, ORGANIZATION_CONTEXT]):
+        print("Error: Missing required environment variables (CLIENT_ID, CLIENT_SECRET, ORGANIZATION_CONTEXT)")
+        sys.exit(1)
+
+    # Get an auth token
+    token = finite_state_sdk.get_auth_token(CLIENT_ID, CLIENT_SECRET)
+    org_ctx = ORGANIZATION_CONTEXT
+
+    # Get all asset versions using get_all_asset_versions
+    asset_versions = finite_state_sdk.get_asset_versions(token, org_ctx)
     
     # Debug output
     if args.debug and asset_versions:
