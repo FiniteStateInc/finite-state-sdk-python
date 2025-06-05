@@ -30,10 +30,11 @@ pip install python-dotenv finite-state-sdk
 **Purpose:** Compare different versions of assets to track security improvements or regressions.
 **Usage:**
 ```bash
-python report_asset_version_comparison.py --secrets-file .env --csv [output_file.csv]
+python report_asset_version_comparison.py --csv [output_file.csv]
 ```
 **Output:** CSV file with columns:
 - Asset Name
+- Group
 - Version
 - Risk Score
 - Vulnerabilities
@@ -43,50 +44,111 @@ python report_asset_version_comparison.py --secrets-file .env --csv [output_file
 **Purpose:** Analyze risk scores across all assets to identify high-risk items.
 **Usage:**
 ```bash
-python report_asset_risk_scores.py --secrets-file .env --csv [output_file.csv]
+python report_asset_risk_scores.py --csv [output_file.csv]
 ```
-**Output:** CSV file with risk scores and associated metrics for each asset.
+**Output:** CSV file with columns:
+- Asset Name
+- Group
+- Version
+- Risk Score
 
 ### 3. Vulnerability Severity Trends Report
 **Script:** `report_vulnerability_severity_trends.py`
 **Purpose:** Track changes in vulnerability severity over time.
 **Usage:**
 ```bash
-python report_vulnerability_severity_trends.py --secrets-file .env --csv [output_file.csv]
+python report_vulnerability_severity_trends.py --csv [output_file.csv]
 ```
-**Output:** CSV file showing vulnerability severity trends over time.
+**Output:** CSV file with columns:
+- Asset Name
+- Group
+- Version
+- Created At
+- Total Vulnerabilities
+- High Severity Vulnerabilities
+- High Severity Percentage
 
 ### 4. Vulnerabilities Over Time Report
 **Script:** `report_vulnerabilities_over_time.py`
 **Purpose:** Track vulnerability counts across asset versions over time.
 **Usage:**
 ```bash
-python report_vulnerabilities_over_time.py --secrets-file .env --csv [output_file.csv] [--debug]
+python report_vulnerabilities_over_time.py --csv [output_file.csv] [--debug]
 ```
-**Output:** CSV file with historical vulnerability data.
+**Output:** CSV file with columns:
+- Asset Name
+- Group
+- Version
+- Vulnerabilities
 
 ### 5. Assets Over Time Report
 **Script:** `report_assets_over_time.py`
 **Purpose:** Track changes in assets over time.
 **Usage:**
 ```bash
-python report_assets_over_time.py --secrets-file .env --csv [output_file.csv]
+python report_assets_over_time.py --csv [output_file.csv]
 ```
-**Output:** CSV file showing asset changes over time.
+**Output:** CSV file with two sections:
+1. Summary section:
+   - Date
+   - Number of Assets
+2. Detailed section:
+   - Date
+   - Asset Name
+   - Asset ID
+   - Group
+   - Created At
 
 ### 6. Uploads Over Time Report
 **Script:** `report_uploads_over_time.py`
 **Purpose:** Track upload activity and types.
 **Usage:**
 ```bash
-python report_uploads_over_time.py --secrets-file .env --csv [output_file.csv]
+python report_uploads_over_time.py --csv [output_file.csv]
 ```
-**Output:** CSV file with upload history and statistics.
+**Output:** CSV file with columns:
+- date
+- id
+- name
+- group
+- createdAt
+
+## Running Multiple Reports
+
+### Report Runner Script
+**Script:** `run_reports.py`
+**Purpose:** Run multiple reports in sequence with a single command.
+**Usage:**
+```bash
+python run_reports.py [options]
+```
+
+**Options:**
+- `--secrets-file`: Path to your .env file (only required if .env not found in working directory)
+- `--include-severity-trends`: Include the vulnerability severity trends report (excluded by default due to long runtime)
+- `--reports`: Comma-separated list of specific reports to run (e.g., "assets_over_time,uploads_over_time")
+- `--no-csv`: Disable CSV output (enabled by default)
+- `--output-dir`: Directory to save CSV files (default: current directory)
+
+**Example Usage:**
+```bash
+# Run all reports except severity trends
+python run_reports.py
+
+# Run all reports including severity trends
+python run_reports.py --include-severity-trends
+
+# Run specific reports
+python run_reports.py --reports assets_over_time,uploads_over_time
+
+# Run reports and save CSVs to a specific directory
+python run_reports.py --output-dir ./reports
+```
 
 ## Common Options
 
 Most reports support the following options:
-- `--secrets-file`: Path to your .env file (required)
+- `--secrets-file`: Path to your .env file (only required if .env not found in working directory)
 - `--csv`: Export results to CSV file (optional)
 - `--debug`: Enable debug output (optional)
 
