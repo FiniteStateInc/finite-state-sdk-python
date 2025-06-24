@@ -6,3 +6,7 @@ token.txt
 /.idea/*
 /.python-version
 /docs-generation/.python-version
+.cursorrules
+.DS_Store
+instructions.md
+__pycache__/report_license.cpython-313.pyc
