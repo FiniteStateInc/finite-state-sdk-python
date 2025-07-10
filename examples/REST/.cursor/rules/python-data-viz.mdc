@@ -1,0 +1,39 @@
+---
+description: "Guidelines for data extraction from the REST API and visualization using Python within the examples directory."
+globs: ["examples/**/*.py"]
+alwaysApply: false
+---
+# Python for Data Extraction & Visualization in Examples
+
+This rule provides a standard workflow and best practices for creating Python scripts in the `examples` directory that fetch data from the REST API, process it, and generate visualizations.
+
+## Recommended Libraries
+
+For a robust and maintainable workflow, please use the following standard libraries:
+
+-   **HTTP Requests**: `requests` - For making clear and simple REST API calls for endpoints not covered by the SDK.
+-   **Data Manipulation**: `pandas` - For organizing and analyzing data in a tabular format (DataFrame).
+-   **Data Visualization**: `matplotlib` & `seaborn` - For creating a wide range of plots.
+-   **PDF Generation**: `fpdf2` - For creating PDF documents with text, tables, and images.
+
+## Standard Workflow
+
+Follow these steps to ensure consistency and readability in your scripts:
+
+1.  **Authentication**: Use `finite_state_sdk.get_auth_token()` to get an API token.
+2.  **Data Fetching**: Make calls to the desired REST API endpoints using the SDK or `requests`.
+3.  **Data Processing**:
+    -   Parse the JSON response.
+    -   Load the data into a `pandas.DataFrame`.
+    -   Clean, filter, and transform the data as needed.
+4.  **Visualization (if applicable)**:
+    -   Use `matplotlib` or `seaborn` to create plots from the DataFrame.
+    -   Save the plot to a temporary image file.
+5.  **PDF Generation**:
+    -   Use `fpdf2` to construct the PDF document.
+    -   Add titles, text summaries, tables (from DataFrames), and plot images to the PDF.
+    -   Save the final PDF report.
+
+## Base Example
+
+The `[report_vulnerabilities_over_time.py](mdc:examples/report_vulnerabilities_over_time.py)` script is a good starting point for understanding data fetching and CSV export. You can adapt its data extraction logic for your PDF reports.

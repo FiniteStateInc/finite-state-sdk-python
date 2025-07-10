@@ -1,0 +1,26 @@
+---
+description: "Overview of the Finite State REST API, including the OpenAPI specification and usage examples."
+alwaysApply: false
+---
+# Finite State REST API
+
+This project includes a REST API for interacting with the Finite State platform.
+
+## OpenAPI Specification
+
+The complete OpenAPI 3.0.3 specification can be found in the `examples/REST/` directory. This document provides detailed information about all available endpoints, request parameters, and response schemas.
+
+- **OpenAPI Spec:** `[API](mdc:examples/REST/API)`
+
+## REST API Examples
+
+The `examples/REST/` directory contains scripts and resources for using the REST API.
+
+- **Directory:** `[examples/REST/](mdc:examples/REST/)`
+- **Example Script:** `[report_license.py](mdc:examples/REST/report_license.py)`
+
+This rule will help developers quickly locate and understand how to use the REST API.
+description:
+globs:
+alwaysApply: false
+---

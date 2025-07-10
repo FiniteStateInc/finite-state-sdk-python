@@ -10,3 +10,5 @@ token.txt
 .DS_Store
 instructions.md
 __pycache__/report_license.cpython-313.pyc
+.env
+/.venv

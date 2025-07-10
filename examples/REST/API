@@ -1,0 +1,3557 @@
+openapi: 3.0.3
+info:
+  title: Finite State Customer API
+  description: |
+    Finite State REST API for accessing and managing platform and product data.
+    
+    This API provides robust querying capabilities for operations that return data from large collections. 
+    To enable flexible and efficient access to data, the API supports filtering, sorting, and pagination 
+    using standard query parameters. 
+    
+    These features help clients tailor queries to return only the relevant data, 
+    in the desired order, and in manageable amounts.
+    
+    ### Filtering
+    
+    Data can be filtered using the `filter` query parameter, which supports expressions in 
+    [RSQL (RESTful Service Query Language)](https://github.com/jirutka/rsql-parser/blob/master/README.adoc). 
+
+    - Filters support the following operators:
+      - `==`, `!=`: equality and inequality
+      - `>`, `<`, `>=`, `<=`: numeric, enumerated, and date comparisons
+      - `=in=`, `=out=`: tests for matching a value from a comma-separated set of values grouped in parentheses
+      - `=like=`: provides case-sensitive wildcard pattern matching on string data types using the `*` wildcard character.
+    To use a literal `*` in the matching pattern, precede it with the `\` character, e.g. `\*`.
+    To use a literal `\` in the matching pattern, precede it with another `\` character, e.g. `\\`.
+      - `=ilike=`: performs the same pattern matching on string data types as the `=like=` operator,
+    except it performs case-insensitive pattern matching.
+      - Logical operators: `and`, `or`, and grouping via parentheses
+    - The filter query parameter takes a string of expressions combined using RSQL syntax.
+    - Filter expressions can be provided using either FIQL-style syntax or the more readable RSQL format.
+    - Filtering is case-sensitive, except where otherwise specified, and attribute type-aware.
+    The supported filter attributes are specified in each applicable operation's descriptions.
+    
+    **Examples:**      
+    ```
+    /api/public/v0/findings?filter=risk>50
+    /api/public/v0/findings?filter=findingId==CVE-2018-11776 or (risk>50 and severity=in=(HIGH,MEDIUM))
+    /api/public/v0/findings?filter=detected<2025-02-25T14:23:00
+    /api/public/v0/findings?filter=severity>MEDIUM or inKev==true
+    /api/public/v0/findings?filter=component=in=(struts-core,spring-web) and (severity>HIGH or inKev==true)
+    /api/public/v0/findings?filter=component=like=spring*
+    /api/public/v0/findings?filter=component=like=spring*boot and findingId=like=CVE-2025-*
+    /api/public/v0/findings?filter=component=ilike=Spring*Boot
+    ```
+    
+    ### Sorting
+
+    Sorting is controlled using the `sort` query parameter. 
+    The value consists of an attribute name, followed by 
+    a sort direction (`asc` for ascending or `desc` for descending), separated by a colon, all lowercase.
+    A single sort attribute is currently supported. 
+    The supported sort attributes are specified as the allowed enumerated values for each applicable operation.
+    
+    **Examples:**
+    ```
+    /api/public/v0/findings?sort=severity:asc
+    /api/public/v0/findings?sort=detected:desc
+    ```
+    
+    ### Pagination
+
+    Pagination allows clients to control the size and offset of result sets, helping improve performance and usability when working with large datasets.
+
+    - `limit`: Specifies the maximum number of records to return.
+    - `offset`: Specifies the number of records to skip before beginning to return results.
+    - Default and maximum values for `limit` may be enforced per endpoint to protect API performance.
+    - Pagination is typically used together with filtering and sorting to create precise and performant queries.
+    
+    **Examples:**
+    ```
+    /api/public/v0/findings?limit=100&offset=200
+    /api/public/v0/findings?filter=severity>MEDIUM&sort=detected:desc&limit=50
+    ```
+    
+    These mechanisms work together to enable flexible, precise data queries across endpoints that support collection retrieval.
+
+  version: 0.3.0
+servers:
+  - url: "{baseUrl}"
+    variables:
+      baseUrl:
+        default: "/api"
+security:
+  - ApiKeyAuth: [ ]
+paths:
+  /public/v0/components:
+    get:
+      description: Get a list of components
+      tags: [ components ]
+      operationId: getComponentsV0
+      parameters:
+        - name: filter
+          description: |
+            Filter applied to the components to be returned.
+            The supported filter attributes are:
+            - `project` - the unique ID of the project to which the component belongs, e.g. 2345678901234567891
+            - `projectVersion` - the unique ID of the project version to which the component belongs, e.g. 3456789012345678912
+            - `created` - the UTC formatted time the component was created, e.g. `2025-02-25T14:23:00`
+            - `type` - the component's type, e.g. library, application, firmware, etc.
+            - `warnings` - number of policy warnings associated with the component
+            - `violations` - number of policy violations associated with the component
+            - See the Filtering section in this specification's description for more information.
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: sort
+          description: |
+            Sort ordering applied to the components to be returned.
+            The allowed sort values are specified in this parameter's enumeration.
+            See the Sorting section in this specification's description for more information.
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [
+              "name:asc",
+              "name:desc",
+              "created:asc",
+              "created:desc",
+              "type:asc",
+              "type:desc",
+              "warnings:asc",
+              "warnings:desc",
+              "violations:asc",
+              "violations:desc"
+            ]
+        - name: offset
+          description: |
+            The number of components to skip before returning results.
+            See the Pagination section in this specification's description for more information.
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: limit
+          description: |
+            The maximum number of components to return.
+            See the Pagination section in this specification's description for more information.
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ComponentV0"
+        "400":
+          description: This request failed to validate against this specification.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+        '404':
+          description: The request's path is not valid
+  /public/v0/findings:
+    get:
+      description: Get a list of findings
+      tags: [ findings ]
+      operationId: getFindingsV0
+      parameters:
+        - name: filter
+          description: |
+            Filter applied to the findings to be returned.
+            The supported filter attributes are:
+            - `component` - the component name without a group qualification, e.g. `struts-core`
+            - `detected` - the UTC formatted time the finding was first detect, e.g. `2025-02-25T14:23:00`
+            - `findingId` - the vulnerability's common identifier, e.g. `CVE-2018-11776`
+            - `inKev` - `true` or `false`
+            - `risk` - risk score `0`-`100`
+            - `severity` - enumerated severity - `CRITICAL`, `HIGH`, `MEDIUM`, `LOW`, `NONE`, `INFO`
+            - `vulnInDataset` - `true` or `false`
+            - `reachabilityScore` - unitless prioritization score that can be positive, negative, or zero, where positive values indicate higher priority vulnerabilities
+            - `status` - the VEX state assigned to the finding (e.g., `NOT_AFFECTED`, `FALSE_POSITIVE`, `IN_TRIAGE`, `RESOLVED_WITH_PEDIGREE`, `RESOLVED`, `EXPLOITABLE`)            
+            - `project` - the unique ID of the project to which the finding's component belongs, e.g. 2345678901234567891
+            - `projectVersion` - the unique ID of the project version to which the finding's component belongs, e.g. 3456789012345678912
+            - See the Filtering section in this specification's description for more information.
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: sort
+          description: |
+            Sort ordering applied to the findings to be returned.
+            The allowed sort values are specified in this parameter's enumeration.
+            See the Sorting section in this specification's description for more information.
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [
+              "detected:asc",
+              "detected:desc",
+              "severity:asc",
+              "severity:desc",
+              "reachabilityScore:asc",
+              "reachabilityScore:desc"
+            ]
+        - name: archived
+          description: |
+            Specified whether archived findings should be returned. 
+            A finding is archived if it has been deleted or its associated component has been deleted.
+            Archived findings are returned when the value is true.
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: offset
+          description: |
+            The number of findings to skip before returning results.
+            See the Pagination section in this specification's description for more information.
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: limit
+          description: |
+            The maximum number of findings to return.
+            See the Pagination section in this specification's description for more information.
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FindingV0"
+        "400":
+          description: This request failed to validate against this specification.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+        '404':
+          description: The request's path is not valid.
+  /public/v0/findings/{projectVersionId}/{findingId}/status:
+    put:
+      description: Update the VEX status of a finding
+      tags: [ findings ]
+      operationId: updateFindingStatusV0
+      parameters:
+        - name: projectVersionId
+          description: The project version's unique identifier.
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: findingId
+          description: The finding's unique identifier.
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        description: Finding status update details. See UpdateFindingStatusV0Request for valid values.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateFindingStatusV0Request'
+      responses:
+        "204":
+          description: Finding status was successfully updated
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+  /public/v0/findings/{findingId}/exploits:
+    get:
+      description:  Returns exploits metadata for the specified finding, if available.
+      tags: [ findings ]
+      operationId: getFindingExploitInfoV0
+      parameters:
+        - name: findingId
+          in: path
+          required: true
+          description: The unique identifier of the finding.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Exploits metadata found for the finding.
+          content:
+            application/json:
+              schema:
+                type: object
+        "404":
+          description: The finding was not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+        "500":
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+  /public/v0/findings/{findingId}/cves:
+    get:
+      description: Returns CVE metadata for the specified finding, if available.
+      tags: [ findings ]
+      operationId: getFindingCveMetadataV0
+      parameters:
+        - name: findingId
+          in: path
+          required: true
+          description: The unique identifier of the finding.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: CVE metadata found for the finding.
+          content:
+            application/json:
+              schema:
+                type: object
+                description: The CVE metadata as a JSON object.
+        "400":
+          description: Invalid request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+        "404":
+          description: The finding was not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+        "500":
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+  /public/v0/findings/{cweId}/cwes:
+    get:
+      description: Returns CWE metadata for the specified CWE ID, if available.
+      tags: [ findings ]
+      operationId: getFindingCweMetadataV0
+      parameters:
+        - name: cweId
+          in: path
+          required: true
+          description: The unique identifier of the CWE.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: CWE metadata found.
+          content:
+            application/json:
+              schema:
+                type: object
+                description: The CWE metadata as a JSON object.
+        "400":
+          description: Invalid request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+        "404":
+          description: The CWE was not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+        "500":
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+  /public/v0/projects:
+    get:
+      description: Get the list of projects
+      tags: [ projects ]
+      operationId: getProjectsV0
+      parameters:
+        - name: filter
+          description: |
+            Filter applied to the projects to be returned.
+            The supported filter attributes are:
+            - `created` - the UTC formatted time the project was created, e.g. `2025-02-25T14:23:00`
+            - `createdBy` - the project creators username, e.g. `dev@awseome.com`
+            - `name` - name assigned to the project - e.g. `Awesome Product 1`
+            - `type` - the type of project - e.g. `application` 
+            - See the Filtering section in this specification's description for more information.
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: sort
+          description: |
+            Sort ordering applied to the projects to be returned.
+            The allowed sort values are specified in this parameter's enumeration.
+            See the Sorting section in this specification's description for more information.
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [
+              "created:asc",
+              "created:desc",
+              "createdBy:asc",
+              "createdBy:desc",
+              "name:asc",
+              "name:desc",
+              "type:asc",
+              "type:desc",
+            ]
+        - name: archived
+          description: |
+            Specified whether archived projects should be returned. 
+            A project is archived if it has been deleted.
+            Archived projects are returned when the value is true.
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: offset
+          description: |
+            The number of projects to skip before returning results.
+            See the Pagination section in this specification's description for more information.
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: limit
+          description: |
+            The maximum number of projects to return.
+            See the Pagination section in this specification's description for more information.
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProjectV0"
+        "400":
+          description: This request failed to validate against this specification.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+        '404':
+          description: The request's path is not valid.
+    post:
+      description: Create a new project
+      tags: [ projects ]
+      operationId: createProjectV0
+      requestBody:
+        required: true
+        description: Project creation details
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProjectV0Request"
+      responses:
+        "200":
+          description: Project was successfully created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectV0"
+        "400":
+          description: This request failed to validate against this specification.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+        "401":
+          description: "Authentication is required for this endpoint."
+        "403":
+          description: "Not authorized"
+  /public/v0/projects/archive:
+    put:
+      description: Bulk archive projects
+      tags: ['projects']
+      operationId: bulkArchiveProjectsV0
+      responses:
+        "204":
+          description: successful operation
+        "400":
+          description: This request failed to validate against this specification.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+        '404':
+          description: The request's path is not valid.
+      requestBody:
+        description: Array of project ID strings to archive
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+              example: [ "12373781892331", "720123618956788" ]
+  /public/v0/projects/restore:
+    put:
+      description: Restore the projects specified by the project ID
+      tags: [ projects ]
+      operationId: bulkRestoreProjectV0
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkRestoreResponse"
+        '404':
+          description: The request's projectId is not valid.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+      requestBody:
+        description: Array of project ID strings to restore
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+              example: [ "12373781892331", "720123618956788" ]
+  /public/v0/projects/{projectId}:
+    get:
+      description: Get a single project by ID
+      tags: [ projects ]
+      operationId: getProjectV0
+      parameters:
+        - name: projectId
+          description: The project's unique identifier.
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectV0"
+        "400":
+          description: This request failed to validate against this specification.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+        '404':
+          description: The request's projectId is not valid.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+    put:
+      description: Update a project metadata
+      tags: [ projects ]
+      operationId: updateProjectV0
+      parameters:
+        - name: projectId
+          description: The project's unique identifier.
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        description: Project update details
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProjectV0Request'
+      responses:
+        "200":
+          description: Project was successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectV0"
+        "400":
+          description: This request failed to validate against this specification.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+        "404":
+          description: The project with the given ID was not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+  /public/v0/projects/{projectId}/branches:
+    get:
+      description: Get the list of branches for the project specified by the projectId
+      tags: [ projects ]
+      operationId: getBranchesV0
+      parameters:
+        - name: projectId
+          description: The project's unique identifier.
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BranchRef"
+        "400":
+          description: This request failed to validate against this specification.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+        '404':
+          description: The request's projectId is not valid.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+  /public/v0/projects/{projectId}/archive:
+    put:
+      description: Archive the project specified by the project ID
+      tags: [ projects ]
+      operationId: archiveProjectV0
+      parameters:
+        - name: projectId
+          description: The project's unique identifier.
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: successful operation
+        '404':
+          description: The request's projectId is not valid.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+  /public/v0/projects/{projectId}/restore:
+    put:
+      description: Restore the project specified by the project ID
+      tags: [ projects ]
+      operationId: restoreProjectV0
+      parameters:
+        - name: projectId
+          description: The project's unique identifier.
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: successful operation
+        '404':
+          description: The request's projectId is not valid.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+  /public/v0/projects/{projectId}/versions:
+    post:
+      description: |
+        Create a new version for the default branch of the project specified by the projectId
+        from the version information in the request body.
+      tags: [ projects ]
+      operationId: createVersionV0ForProject
+      parameters:
+        - name: projectId
+          description: The project's unique identifier.
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The version was successfully created. The new version is returned in the body.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VersionRef"
+        "400":
+          description: This request failed to validate against this specification.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+        '404':
+          description: The request's projectId is not valid.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+      requestBody:
+        description: New version request document
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateVersionRequest'
+  /public/v0/projects/roles:
+    get:
+      summary: "Get the list of roles for projects"
+      tags: [ projects ]
+      operationId: getProjectRoles
+      responses:
+        "200":
+          description: "a list of roles for projects"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example: [ "project_admin", "project_viewer" ]
+        "401":
+          description: "Authentication is required for this endpoint."
+        "403":
+          description: "Not authorized"
+  /public/v0/projects/{projectId}/users:
+    get:
+      summary: "Get the list of users and their roles for a specific project"
+      tags: [ projects ]
+      operationId: getProjectUsers
+      parameters:
+        - name: projectId
+          description: The project's unique identifier.
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "a list of roles for the specified project"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProjectUserV0"
+        "401":
+          description: "Authentication is required for this endpoint."
+        "403":
+          description: "Not authorized"
+        "404":
+          description: "A project with the given projectId could not be found."
+  /public/v0/projects/{projectId}/groups:
+    get:
+      summary: "Get the list of groups and their roles for a specific project"
+      tags: [ projects ]
+      operationId: getProjectGroups
+      parameters:
+        - name: projectId
+          description: The project's unique identifier.
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "a list of roles for the specified project"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProjectGroupV0"
+        "401":
+          description: "Authentication is required for this endpoint."
+        "403":
+          description: "Not authorized"
+        "404":
+          description: "A project with the given projectId could not be found."
+  /public/v0/branches/{branchId}/versions:
+    get:
+      description: Get the list of versions for the branch specified by the branchId
+      tags: [ branches ]
+      operationId: getVersionsV0
+      parameters:
+        - name: branchId
+          description: The branch's unique identifier.
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VersionRef"
+        "400":
+          description: This request failed to validate against this specification.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+        '404':
+          description: The request's projectId is not valid.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+    post:
+      description: |
+        Create a new version for the branch specified by the branchId
+        from the version information in the request body.
+      tags: [ branches ]
+      operationId: createVersionV0ForBranch
+      parameters:
+        - name: branchId
+          description: The branch's unique identifier.
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The version was successfully created. The new version is returned in the body.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VersionRef"
+        "400":
+          description: This request failed to validate against this specification.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+        '404':
+          description: The request's branchId is not valid.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+      requestBody:
+        description: New version request document
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateVersionRequest'
+  /public/v0/sboms/cyclonedx/{projectVersionId}:
+    get:
+      description: Get an SBOM for a version in a CycloneDX format.
+      tags: [ sboms ]
+      operationId: getSbomCdx
+      parameters:
+        - name: projectVersionId
+          description: Get the SBOM for the version specified by the projectVersionId.
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The SBOM was successfully created and returned in the response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SbomCdx"
+        '404':
+          description: The version specified by the projectVersionId could not be found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+        "400":
+          description: Invalid versionId format.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+  /public/v0/sboms/spdx/{projectVersionId}:
+    get:
+      description: Get an SBOM for a version in a SPDX format.
+      tags: [ sboms ]
+      operationId: getSbomSpdx
+      parameters:
+        - name: projectVersionId
+          description: Get the SBOM for the version specified by the projectVersionId.
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The SBOM was successfully created and returned in the response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SbomSpdx"
+        "404":
+          description: The version specified by the projectVersionId could not be found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+        "400":
+          description: Invalid versionId format.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+  /public/v0/scans:
+    get:
+      summary: Get scan status information
+      tags: [ scans ]
+      operationId: getScansV0
+      description: |
+        Retrieves the status and details of scans for the authenticated user.
+        This endpoint provides information about all scans associated with the user's account,
+        including scan types, status, and timestamps.
+
+      parameters:
+        - name: filter
+          description: |
+            Filter applied to the scans to be returned.
+            The supported filter attributes are:
+            - `project` - the unique ID of the project to which the scan belongs, e.g. 2345678901234567891
+            - `projectVersion` - the unique ID of the project version to which the scan belongs, e.g. 3456789012345678912
+            - `type` - the type of scan, e.g. SCA, SAST, CONFIG, PYTHON, SOURCE_SCA, JAR
+            - `status` - the status of the scan, e.g. INITIAL, COMPLETED, ERROR, STARTED
+            - See the Filtering section in this specification's description for more information.
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: sort
+          description: |
+            Sort ordering applied to the scans to be returned.
+            The allowed sort values are specified in this parameter's enumeration.
+            See the Sorting section in this specification's description for more information.
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [
+              "created:asc",
+              "created:desc",
+              "completed:asc",
+              "completed:desc"
+            ]
+        - name: offset
+          in: query
+          description: The number of items to skip before starting to collect the result set
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: limit
+          in: query
+          description: The number of items to return
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ScanV0'
+        '400':
+          description: This request failed to validate against this specification.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+        '404':
+          description: The request's path is not valid
+    post:
+      description: Upload and scan a binary file to a specified branch version.
+      tags: [ scans ]
+      operationId: uploadBinaryScan
+      parameters:
+        - name: type
+          description: |
+            Specifies the type/s of binary scan to perform on the binary file.
+            - sca: Binary SCA scans are responsible for generating an SBOM as a CycloneDX JSON document.
+            - sast: Binary SAST scans detect previously-unknown issues in binary files, such as potential buffer overflows or binary-specific configuration issues.
+            - config: Configuration Analysis scans generate findings based on configuration issues like hardcoded passwords or cryptographic materials.
+          in: query
+          required: true
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [ "sca", "sast", "config" ]
+        - name: filename
+          description: The name of the uploaded file
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: "^[a-zA-Z0-9. -_()]{1,60}$"
+        - name: projectVersionId
+          description: |
+            Uploads and performs a binary scan for the version specified by the projectVersionId.
+          in: query
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "200":
+          description: |
+            The scan was successfully uploaded and is being processed.
+            Check back later for scan results.
+        "400":
+          description: This request has invalid parameters or data.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+        '404':
+          description: The resources specified by this request's projectId, branchId, or projectVersionId could not be found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+  /public/v0/api-tokens:
+    get:
+      description: "Retrieves all API tokens for the active user."
+      tags: [ apiTokens ]
+      parameters:
+        - name: filter
+          description: |
+            Filter applied to the findings to be returned.
+            The supported filter attributes are:
+            - `name` - the API token name, e.g. `my-token`
+            - See the Filtering section in this specification's description for more information.
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: sort
+          description: |
+            Sort ordering applied to the findings to be returned.
+            The allowed sort values are specified in this parameter's enumeration.
+            See the Sorting section in this specification's description for more information.
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [ "name:asc", "name:desc", "createdTimestamp:asc", "createdTimestamp:desc" ]
+        - name: offset
+          description: |
+            The number of findings to skip before returning results.
+            See the Pagination section in this specification's description for more information.
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: limit
+          description: |
+            The maximum number of findings to return.
+            See the Pagination section in this specification's description for more information.
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: "The list of API tokens for the active user."
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiToken"
+    post:
+      description: "Creates an API token for the active user."
+      tags: [ apiTokens ]
+      responses:
+        "201":
+          description: "The API token was successfully created.  Body follows."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiToken"
+        "400":
+          description: "A validation error occurred while checking the given API token."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+      requestBody:
+        description: "The API token to create."
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApiToken"
+  /public/v0/api-tokens/{api-token-id}:
+    get:
+      description: "Retrieves the API token with the given ID."
+      tags: [ apiTokens ]
+      parameters:
+        - in: path
+          name: api-token-id
+          required: true
+          schema:
+            type: string
+          description: "The API token primary key."
+      responses:
+        "200":
+          description: "The API token that was retrieved."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiToken"
+        "404":
+          description: "The API token with the given identifier was not found."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+    put:
+      description: "Updates the API token with the given ID."
+      tags: [ apiTokens ]
+      parameters:
+        - in: path
+          name: api-token-id
+          required: true
+          schema:
+            type: string
+          description: "The API token primary key."
+      responses:
+        "200":
+          description: "The API token that was retrieved."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiToken"
+        "400":
+          description: "A validation error occurred while checking the given API token."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+        "404":
+          description: "The API token with the given identifier was not found."
+      requestBody:
+        description: "The API token to update."
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApiToken"
+    delete:
+      description: "Deletes the API token with the given ID."
+      tags: [ apiTokens ]
+      parameters:
+        - in: path
+          name: api-token-id
+          required: true
+          schema:
+            type: string
+          description: "The API token primary key."
+      responses:
+        "204":
+          description: "The delete operation was accepted."
+        "404":
+          description: "The API token with the given identifier was not found."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+  /public/v0/users/{id}:
+    get:
+      summary: "Gets a user by their user ID."
+      operationId: "getUserById"
+      tags: [ users ]
+      parameters:
+        - name: id
+          description: "The primary key of the user."
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "The user with the given ID."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserV0"
+        "400":
+          description: Invalid versionId format.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+        "401":
+          description: "Authentication is required for this endpoint."
+        "404":
+          description: "A user with the given user ID could not be found."
+    put:
+      operationId: "updateUserById"
+      tags: [ users ]
+      parameters:
+        - name: id
+          description: "The primary key of the user."
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        description: "Details of the user to be updated."
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserV0'
+      responses:
+        "200":
+          description: "The user has been updated successfully."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserV0"
+        "400":
+          description: "Invalid request data."
+        "401":
+          description: "Authentication is required for this endpoint."
+    delete:
+      summary: "Deletes a user with the given ID."
+      operationId: "deleteUserById"
+      tags: [ users ]
+      parameters:
+        - name: id
+          description: "The primary key of the user."
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "The user with the given ID."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserV0"
+        "401":
+          description: "Authentication is required for this endpoint."
+        "404":
+          description: "A user with the given user ID could not be found."
+  /public/v0/users/:
+    get:
+      summary: "Gets a list of users"
+      operationId: "getUsers"
+      tags: [ users ]
+      parameters:
+        - name: filter
+          description: |
+            Filter applied to the users to be returned.
+            The supported filter attributes are:
+            - `email` - email of the user
+            - See the Filtering section in this specification's description for more information.
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: sort
+          description: |
+            Sort ordering applied to the components to be returned.
+            The allowed sort values are specified in this parameter's enumeration.
+            See the Sorting section in this specification's description for more information.
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [
+              "email:asc",
+              "email:desc",
+              "created:asc",
+              "created:desc"
+            ]
+        - name: offset
+          description: |
+            The number of components to skip before returning results.
+            See the Pagination section in this specification's description for more information.
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: limit
+          description: |
+            The maximum number of components to return.
+            See the Pagination section in this specification's description for more information.
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: A list of users.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserV0'
+        "401":
+          description: "Authentication is required for this endpoint."
+    post:
+      summary: "Adds a new user."
+      operationId: "addUser"
+      tags: [ users ]
+      requestBody:
+        required: true
+        description: "Details of the user to be created."
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ "userId", "email" ]
+              properties:
+                userId:
+                  type: string
+                  description: "The (immutable once created, unique to the customer) user identifier."
+                  example: "john.doe"
+                email:
+                  type: string
+                  description: "The email address of the user."
+                  example: "john.doe@example.com"
+                firstName:
+                  type: string
+                  description: "The first name of the user."
+                  example: "John"
+                lastName:
+                  type: string
+                  description: "The last name of the user."
+                  example: "Doe"
+                eulaAccepted:
+                  type: boolean
+                  description: "Indicates whether the user has accepted the End User License Agreement (EULA)."
+                  example: true
+                eulaAcceptedAt:
+                  type: string
+                  format: date-time
+                  description: "The timestamp when the user accepted the EULA."
+                  example: "2023-08-15T14:30:00Z"
+                orgRoles:
+                  type: array
+                  description: "The list of organization roles assigned to the user"
+                  items:
+                    type: string
+                  example: [ "super_user" ]
+      responses:
+        "200":
+          description: "The user has been created successfully."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserV0"
+        "400":
+          description: "Invalid request data."
+        "401":
+          description: "Authentication is required for this endpoint."
+        "409":
+          description: "A user with the same user ID already exists."
+  /public/v0/users/{id}/password-reset:
+    get:
+      summary: "Sends a password reset email to the user with the given ID"
+      operationId: "sendPasswordResetForUserId"
+      tags: [ users ]
+      parameters:
+        - name: id
+          description: "The primary key of the user."
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "The user with the given ID."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserV0"
+        "401":
+          description: "Authentication is required for this endpoint."
+        "404":
+          description: "A user with the given user ID could not be found."
+  /public/v0/users/{userId}/projects/{projectId}/roles:
+    get:
+      summary: "Get the list of roles for a user and project"
+      operationId: "getUserProjectRoles"
+      tags: [ users ]
+      parameters:
+        - name: userId
+          description: The primary key of the user.
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: projectId
+          description: The project id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: a list of roles for the specified user and project
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example: [ "project_viewer"]
+        "401":
+          description: "Authentication is required for this endpoint."
+        "403":
+          description: "Not authorized"
+        "404":
+          description: "A user or project with the given id(s) could not be found."
+    put:
+      summary: "Update the list of project roles for a user and project"
+      operationId: "setUserProjectRoles"
+      tags: [ users ]
+      parameters:
+        - name: userId
+          description: The primary key of the user.
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: projectId
+          description: The project id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        description: "The new project roles to assign to the user"
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+      responses:
+        "202":
+          description: "The put operation was accepted."
+        "403":
+          description: "Not authorized"
+        "404":
+          description: "A user or project with the given id(s) or given role name(s) could not be found."
+
+  /public/v0/org/roles:
+    get:
+      summary: "Returns the list of available organization roles"
+      operationId: "getOrganizationRoles"
+      tags: [ organization ]
+      responses:
+        "200":
+          description: "List of organization roles"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        "401":
+          description: "Authentication is required for this endpoint."
+        "403":
+          description: "Not authorized"
+
+  /public/v0/cves:
+    get:
+      description: Get a list of CVEs aggregated by CVE ID, including affected components and projects
+      tags: [ cves ]
+      operationId: getAggregatedCvesV0
+      parameters:
+        - name: filter
+          description: |
+            Filter applied to the CVEs to be returned.
+            The supported filter attributes are:
+            - `cveId` - the vulnerability's common identifier, e.g. `CVE-2018-11776`
+            - `component` - the component version ID, e.g. `345678901234567890`
+            - `project` - the project ID to which the component belongs, e.g. `2345678901234567891`
+            - `severity` - enumerated severity - `CRITICAL`, `HIGH`, `MEDIUM`, `LOW`, `NONE`, `INFO`
+            - `risk` - risk score `0`-`100`
+            - `detectionDate` - the UTC formatted time the CVE was detected, e.g. `2025-02-25T14:23:00`
+            - See the Filtering section in this specification's description for more information.
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: sort
+          description: |
+            Sort ordering applied to the CVEs to be returned.
+            The allowed sort values are:
+            - `cveId:asc` or `cveId:desc` - sort by CVE identifier
+            - `severity:asc` or `severity:desc` - sort by severity level
+            - `detectionDate:asc` or `detectionDate:desc` - sort by detection time
+            - `risk:asc` or `risk:desc` - sort by risk score
+            See the Sorting section in this specification's description for more information.
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [
+              "cveId:asc",
+              "cveId:desc",
+              "severity:asc",
+              "severity:desc",
+              "detectionDate:asc",
+              "detectionDate:desc",
+              "risk:asc",
+              "risk:desc"
+            ]
+        - name: archived
+          description: |
+            Specified whether archived findings should be included in the aggregation. 
+            A finding is archived if it has been deleted or its associated component has been deleted.
+            Archived findings are included when the value is true.
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: offset
+          description: |
+            The number of CVEs to skip before returning results.
+            See the Pagination section in this specification's description for more information.
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: limit
+          description: |
+            The maximum number of CVEs to return.
+            See the Pagination section in this specification's description for more information.
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: successful operation
+          headers:
+            X-Total-Count:
+              description: The total number of CVEs that match the filter criteria
+              schema:
+                type: integer
+                format: int64
+            X-Offset:
+              description: The number of CVEs skipped in this response
+              schema:
+                type: integer
+                format: int64
+            X-Limit:
+              description: The maximum number of CVEs returned in this response
+              schema:
+                type: integer
+                format: int64
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AggregatedCveV0"
+        "400":
+          description: This request failed to validate against this specification.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonErrorResponse"
+        '404':
+          description: The request's path is not valid.
+
+  /public/v0/authUser:
+    get:
+      summary: "Retrieves information for the authenticated user"
+      tags: [ authUser ]
+      operationId: getAuthenticatedUser
+      responses:
+        "200":
+          description: "The current user's data"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthenticatedUserV0"
+        "401":
+          description: "Authentication is required for this endpoint."
+  /public/v0/authUser/projects/{projectId}/actions:
+    get:
+      summary: "Retrieves the permitted project actions for the authenticated user and the given project"
+      tags: [ authUser ]
+      operationId: getProjectUserActions
+      parameters:
+        - name: projectId
+          description: The project's unique identifier.
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "a list of the authenticated user's actions for the specified project"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example: ["view_findings", "exclude_component"]
+        "401":
+          description: "Authentication is required for this endpoint."
+        "403":
+          description: "Not authorized"
+        "404":
+          description: "A project with the given projectId or user with the given userId could not be found."
+
+  /public/v0/groups:
+    get:
+      description: List all groups for the organization
+      tags: [ groups ]
+      operationId: getGroups
+      parameters:
+        - name: offset
+          description: |
+            The number of components to skip before returning results.
+            See the Pagination section in this specification's description for more information.
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: limit
+          description: |
+            The maximum number of components to return.
+            See the Pagination section in this specification's description for more information.
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: filter
+          description: |
+            Filter applied to the groups to be returned.
+            The supported filter attributes are:
+            - `name` - the name of the group
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: sort
+          description: |
+            Sort ordering applied to the groups to be returned.
+            The allowed sort values are specified in this parameter's enumeration.
+            See the Sorting section in this specification's description for more information.
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [
+              "name:asc",
+              "name:desc"
+            ]
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GroupV0'
+        "401":
+          description: Unauthorized - Invalid or missing token
+        "403":
+          description: Forbidden - Insufficient permissions
+    post:
+      description: Create a new group
+      tags: [ groups ]
+      operationId: createGroup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupV0'
+      responses:
+        "200":
+          description: Group created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupV0'
+        "400":
+          description: Bad Request - Invalid input
+        "401":
+          description: Unauthorized - Invalid or missing token
+        "403":
+          description: Forbidden - Insufficient permissions
+        "409":
+          description: Conflict - Group name already exists
+  /public/v0/groups/{id}:
+    get:
+      description: Get a group
+      tags: [ groups ]
+      operationId: getGroup
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Group ID
+      responses:
+        "200":
+          description: Group updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupV0'
+        "403":
+          description: Forbidden - Insufficient permissions
+        "404":
+          description: Not Found - Group doesn't exist
+    put:
+      description: Update an existing group
+      tags: [ groups ]
+      operationId: updateGroup
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Group ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupV0'
+      responses:
+        "200":
+          description: Group updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupV0'
+        "400":
+          description: Bad Request - Invalid input
+        "401":
+          description: Unauthorized - Invalid or missing token
+        "403":
+          description: Forbidden - Insufficient permissions
+        "404":
+          description: Not Found - Group doesn't exist
+        "409":
+          description: Conflict - Group name already exists
+    delete:
+      description: Delete a group
+      tags: [ groups ]
+      operationId: deleteGroup
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Group ID
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                force:
+                  type: boolean
+                  description: If true, will delete the group even if it has members
+                  default: false
+      responses:
+        "204":
+          description: Group deleted successfully
+        "400":
+          description: Bad Request - Invalid input
+        "401":
+          description: Unauthorized - Invalid or missing token
+        "403":
+          description: Forbidden - Insufficient permissions
+        "404":
+          description: Not Found - Group doesn't exist
+        "409":
+          description: Conflict - Group has members and force=false
+  /public/v0/groups/bulk:
+    post:
+      description: Create multiple groups
+      tags: [ groups ]
+      operationId: bulkCreateGroups
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/GroupV0'
+      responses:
+        "200":
+          description: Groups created successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GroupV0'
+        "400":
+          description: Bad Request - Invalid input
+        "401":
+          description: Unauthorized - Invalid or missing token
+        "403":
+          description: Forbidden - Insufficient permissions
+  /public/v0/groups/{id}/members:
+    get:
+      description: List all members of a group
+      tags: [ groups ]
+      operationId: getGroupMembers
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Group ID
+        - name: offset
+          description: |
+            The number of components to skip before returning results.
+            See the Pagination section in this specification's description for more information.
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: limit
+          description: |
+            The maximum number of components to return.
+            See the Pagination section in this specification's description for more information.
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GroupMemberV0'
+        "401":
+          description: Unauthorized - Invalid or missing token
+        "403":
+          description: Forbidden - Insufficient permissions
+        "404":
+          description: Not Found - Group doesn't exist
+    post:
+      description: Add members to a group
+      tags: [ groups ]
+      operationId: addMembersToGroup
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Group ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+              description: List of user IDs to add to the group
+      responses:
+        "200":
+          description: Members added successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                description: List of successfully added user IDs
+        "400":
+          description: Bad Request - Invalid input
+        "401":
+          description: Unauthorized - Invalid or missing token
+        "403":
+          description: Forbidden - Insufficient permissions
+        "404":
+          description: Not Found - Group doesn't exist
+    delete:
+      description: Delete members from a group
+      tags: [ groups ]
+      operationId: deleteMembersFromGroup
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Group ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+              description: List of user IDs to delete from the group
+      responses:
+        "204":
+          description: Members deleted successfully
+        "400":
+          description: Bad Request - Invalid input
+        "401":
+          description: Unauthorized - Invalid or missing token
+        "403":
+          description: Forbidden - Insufficient permissions
+        "404":
+          description: Not Found - Group doesn't exist
+  /public/v0/groups/{groupId}/projects/{projectId}/roles:
+    get:
+      summary: "Get the list of roles for a group and project"
+      operationId: "getGroupProjectRoles"
+      tags: [ groups ]
+      parameters:
+        - name: groupId
+          description: The primary key of the group.
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: projectId
+          description: The project id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: a list of roles for the specified group and project
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example: [ "Project Admin" ]
+        "401":
+          description: "Authentication is required for this endpoint."
+        "403":
+          description: "Not authorized"
+        "404":
+          description: "A group or project with the given id(s) could not be found."
+    put:
+      summary: "Update the list of project roles for a group and project"
+      operationId: "setGroupProjectRoles"
+      tags: [ groups ]
+      parameters:
+        - name: groupId
+          description: The primary key of the user.
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: projectId
+          description: The project id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        description: "The new project roles to assign to the group"
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+      responses:
+        "202":
+          description: "The put operation was accepted."
+        "403":
+          description: "Not authorized"
+        "404":
+          description: "A group or project with the given id(s) or given role name(s) could not be found."
+  /public/v0/product-activation:
+    get:
+      description: "Get all product activations.  This is an administrative-only action."
+      tags:
+        - product_activation
+      operationId: getAllProductActivations
+      parameters:
+        - name: offset
+          description: |
+            The number of components to skip before returning results.
+            See the Pagination section in this specification's description for more information.
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: limit
+          description: |
+            The maximum number of components to return.
+            See the Pagination section in this specification's description for more information.
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductActivationV0'
+        "401":
+          description: Unauthorized - Invalid or missing token
+        "403":
+          description: Forbidden - Insufficient permissions
+  /public/v0/product-activation/{id}:
+    get:
+      description: "Gets a product activation by ID.  This is an administrative-only action."
+      tags:
+        - product_activation
+      operationId: getProductActivationById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: |
+            The identifier of the product activation.
+            Use the keyword 'active' to get the currently active product activation, if one exists.
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductActivationV0'
+        "401":
+          description: Unauthorized - Invalid or missing token
+        "403":
+          description: Forbidden - Insufficient permissions
+        "404":
+          description: Product activation with the given ID does not found.
+    put:
+      description: "Upserts a new product activation with the given identifier.  This is an administrative-only action."
+      tags:
+        - product_activation
+      operationId: upsertProductActivationById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: |
+            The identifier of the product activation.
+            This must match the 'id' field in the activation document.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductActivationV0'
+      responses:
+        "200":
+          description: Product activation upserted successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductActivationV0'
+        "400":
+          description: Bad Request - Invalid input
+        "401":
+          description: Unauthorized - Invalid or missing token
+        "403":
+          description: Forbidden - Insufficient permissions
+    delete:
+      description: "Removes a product activation by ID.  This is an administrative-only action."
+      tags:
+        - product_activation
+      operationId: deleteProductActivationById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: |
+            The identifier of the product activation.
+            Use the keyword 'active' to get the currently active product activation, if one exists.
+      responses:
+        "204":
+          description: Successful operation
+        "401":
+          description: Unauthorized - Invalid or missing token
+        "403":
+          description: Forbidden - Insufficient permissions
+  /public/v0/product-activation/{id}/entitlements:
+    get:
+      description: "Lists the entitlements for a given license by ID.  This may be done by any logged in user."
+      tags:
+        - product_activation
+      operationId: introspectProductActivationById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: |
+            The identifier of the product activation.
+            Use the keyword 'active' to get the currently active product activation, if one exists.
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductActivationEntitlementsV0'
+        "401":
+          description: Unauthorized - Invalid or missing token
+        "403":
+          description: Forbidden - Insufficient permissions
+        "404":
+          description: Product activation with the given ID does not found.
+  /public/v0/product-activation/{id}/condition:
+    get:
+      description: "Gets the condition of the product activation by ID.  This may be done by any logged in user."
+      tags:
+        - product_activation
+      operationId: getProductActivationConditionById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: |
+            The identifier of the product activation.
+            Use the keyword 'active' to get the currently active product activation, if one exists.
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductActivationConditionV0'
+        "401":
+          description: Unauthorized - Invalid or missing token
+        "403":
+          description: Forbidden - Insufficient permissions
+        "404":
+          description: Product activation with the given ID does not found.
+components:
+  schemas:
+    CreateProjectV0Request:
+      type: object
+      description: Create a new project request document
+      properties:
+        name:
+          type: string
+          minLength: 1
+          pattern: '^(?!\s*$).+'
+          description: Name of the project.
+          example: "Amazing Product 1"
+        description:
+          type: string
+          description: Description of the project.
+          example: "Amazing Product 1 firmware"
+        type:
+          description: "Type of the project, must be one of: application, framework, library, container, platform, operating-system, device, device-driver, firmware, file, machine-learning-model, data"
+          type: string
+          example: "application"
+        branch:
+          type: string
+          description: Name of the default branch for the project.
+          example: "main"
+      required:
+        - name
+        - description
+        - type
+    ApiToken:
+      type: object
+      description: "A user's API token, used for authentication."
+      properties:
+        id:
+          type: string
+          description: |
+            A unique identifier for the API token (the primary key).
+            This is assigned by the server.
+          example: 42
+        name:
+          type: string
+          description: |
+            A user-provided name for the API token.
+            This does not have to be unique (either globally or to the user), but does need to be present.
+          example: "My API Token"
+        secret:
+          type: string
+          description: |
+            The unencrypted secret, as generated by the server.
+            This is only visible upon creation, because it is run through a one-way hash upon storage.
+            It is presented as a base16-encoded (0-9, a-f) string.
+          example: "12345"
+        secretHint:
+          type: string
+          description: |
+            The first two characters of the unencrypted secret (as presented as a base16-encoded string),
+            followed by the string .., followed by the last two characters of the unencrypted (base16-encoded) secret.
+            This is meant to help users disambiguate different tokens.
+          example: "12..45"
+        createdTimestamp:
+          type: string
+          format: "date-time"
+          description: |
+            The creation date/time of the token.
+            Set by the server on token creation.
+            Expressed in ISO 8601 format and represented in UTC.
+          example: "2018-03-20T09:12:28Z"
+    BranchV0:
+      type: object
+      description: A project's branch, which can have multiple versions.
+      properties:
+        id:
+          type: string
+          description: The branch's unique identifier.
+          example: 1234567890123456789
+        name:
+          type: string
+          description: Name of the branch.
+          example: "main"
+        latestVersion:
+          $ref: "#/components/schemas/VersionV0"
+    BranchRef:
+      type: object
+      description: Reduced set of key branch data.
+      properties:
+        id:
+          type: string
+          description: The branch's unique identifier.
+          example: "3"
+        name:
+          type: string
+          description: Name of the branch.
+          example: "main"
+    ComponentV0:
+      type: object
+      description: A version-specific component instance.
+      properties:
+        # Todo add mitigation, projectRef, branchRef, and versionRef
+        id:
+          type: string
+          description: The component's unique identifier.
+          example: 1234567890123456789
+        gcId:
+          type: string
+          description: Global component identifier representing the canonical version of the component.
+          example: 2345678901234567891
+        name:
+          type: string
+          description: The component's name.
+          example: "libgcc"
+        created:
+          type: string
+          format: date-time
+          description: Timestamp when the component was created.
+          example: "2025-02-25T14:23:00Z"
+        project:
+          $ref: "#/components/schemas/ProjectRef"
+        branch:
+          $ref: "#/components/schemas/BranchRef"
+        projectVersion:
+          $ref: "#/components/schemas/VersionRef"
+        version:
+          type: string
+          description: The component's version number.
+          example: "4.1.6.RELEASE"
+        type:
+          type: string
+          description: Category of the component, e.g. library, application, firmware, etc.
+          example: "library"
+        supplier:
+          type: string
+          description: Supplier or originator of the component.
+          example: "alpine"
+        licenses:
+          type: string
+          description: SPDX license identifier(s) summarizing licensing of the component.
+          example: "GPL-2.0-only"
+        licenseDetails:
+          type: array
+          description: The component's license(s) details.
+          items:
+            $ref: '#/components/schemas/LicenseDetail'
+        findings:
+          type: integer
+          description: Count of findings associated with the component.
+          example: 2
+        warnings:
+          type: integer
+          description: Number of policy warnings triggered by the component.
+          example: 0
+        violations:
+          type: integer
+          description: Number of policy violations triggered by the component.
+          example: 1
+        severityCounts:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Mapping of issue severities to counts (e.g. CRITICAL, HIGH). Severities with count 0 are omitted.
+          example: { HIGH: 1 }
+        source:
+          type: array
+          description: Origins or methods through which the component was introduced.
+          items:
+            type: string
+          example: [ "UPLOAD" ]
+        confidence:
+          type: number
+          format: double
+          description: Confidence level of the component's identification.
+          example: 0.95
+        projectModule:
+          type: boolean
+          description: Indicates if the component is a project module.
+          example: false
+        origin:
+          type: array
+          description: Set of strings representing the origin of the component.
+          items:
+            type: string
+          example: ["UPLOAD"]
+        bomRef:
+          type: string
+          description: Reference to the Bill of Materials (BOM).
+          example: "pkg:maven/org.springframework/spring-core@5.3.20"
+        excluded:
+          type: boolean
+          description: Indicates if the component is excluded.
+          example: false
+        newRecord:
+          type: boolean
+          description: Indicates if this is a new record.
+          example: true
+        suppress:
+          type: boolean
+          description: Indicates if the component is suppressed.
+          example: false
+        suppressionReason:
+          type: string
+          description: The reason why the component is suppressed.
+          example: "Component is temporarily suppressed for testing"
+        suppressExpires:
+          type: string
+          format: date-time
+          description: The date and time when the suppression expires.
+          example: "2025-03-25T14:23:00Z"
+        includeInFutureVersions:
+          type: boolean
+          description: Indicates if the component should be included in future versions.
+          example: false
+    ComponentRef:
+      type: object
+      description: A component's summary details.
+      properties:
+        appId:
+          type: string
+          description: Unique identifier for the component's project.
+          example: "234567890123456789"
+        id:
+          type: string
+          description: Unique identifier for the software component.
+          example: "345678901234567890"
+        name:
+          type: string
+          description: >
+            Name of the component, typically including group/artifact identifiers.
+          example: "org.springframework/spring-expression"
+        vcId:
+          type: string
+          description: ???
+          example: "456789012345678901"
+        version:
+          type: string
+          description: The component's version number.
+          example: "4.1.6.RELEASE"
+      required:
+        - appId
+        - id
+        - name
+        - vcId
+        - version
+    CreateVersionRequest:
+      type: object
+      description: Create a new version request document
+      properties:
+        version:
+          description: Name of the version.
+          type: string
+          example: "2-26 Scan 2"
+        releaseType:
+          description: Specifies the new version's release type.
+          type: string
+          enum: ["RELEASE", "PRE-RELEASE"]
+          example: release
+      required:
+        - version
+        - releaseType
+    FindingV0:
+      type: object
+      description: Finding for a software component.
+      properties:
+        component:
+          $ref: '#/components/schemas/ComponentRef'
+        cwes:
+          type: array
+          items:
+            type: string
+          description: List of Common Weakness Enumeration (CWE) identifiers that describe the type of vulnerability.
+          example:
+            - "CWE-770"
+        detected:
+          type: string
+          format: date-time
+          description: Timestamp when the finding was detected.
+          example: "2025-02-25T14:23:00Z"
+        epssPercentile:
+          type: number
+          nullable: true
+          description: >
+            Percentile score from the Exploit Prediction Scoring System (EPSS). This value may be null if data is unavailable.
+          example: null
+        epssScore:
+          type: number
+          nullable: true
+          description: >
+            EPSS score indicating the likelihood of exploitation for the vulnerability. May be null if not provided.
+          example: null
+        exploitInfo:
+          type: array
+          items:
+            type: string
+          description: List exploit attributes associated with the finding.
+          example: []
+        findingId:
+          type: string
+          description: > 
+            Common finding identifier that depends on the type of finding, for an example a CVE identifier.
+          example: "CVE-2022-22950"
+        id:
+          type: string
+          description: Unique finding identifier.
+          example: "123456789012345678"
+        inKev:
+          type: boolean
+          description: >
+            Indicates whether the finding is part of the Known Exploited Vulnerabilities (KEV) list.
+          example: false
+        inVcKev:
+          type: boolean
+          description: >
+            Indicates whether the finding is included in a specific vulnerability collection (VC KEV).
+          example: false
+        location:
+          type: string
+          description: >
+            Short identifier or location reference for the component associated with the vulnerability.
+          example: "spring-expression"
+        risk:
+          type: number
+          description: >
+            Numerical risk score assigned to the vulnerability.
+          example: 65
+        severity:
+          type: string
+          description: >
+            Qualitative severity level of the finding.
+            The list of severities are: "critical", "high", "medium", "low", "none", "info"
+          example: "medium"
+        status:
+          type: string
+          nullable: true
+          description: VEX state assigned to finding.
+          enum: [ "NOT_AFFECTED", "FALSE_POSITIVE", "IN_TRIAGE", "RESOLVED_WITH_PEDIGREE", "RESOLVED", "EXPLOITABLE" ]
+          example: "EXPLOITABLE"
+        title:
+          type: string
+          description: The finding's descriptive title.
+          example: "CVE-2022-22950 - org.springframework/spring-expression@4.1.6.RELEASE"
+        type:
+          type: string
+          description: Type of the vulnerability (e.g., "cve").
+          example: "cve"
+        violations:
+          type: integer
+          description: Count of policy violations related to the finding.
+          example: 0
+        warnings:
+          type: integer
+          description: Count of policy warnings associated with the finding.
+          example: 2
+        vulnInDataset:
+          type: boolean
+          description: Indicates whether the vulnerability is present in the dataset.
+          example: true
+        reachabilityScore:
+          type: number
+          description: |
+            A unitless prioritization score that indicates the relative importance of addressing this vulnerability.
+            The score can be positive, negative, or zero, where:
+            - Positive values indicate higher priority vulnerabilities that should be addressed sooner
+            - Negative values indicate lower priority vulnerabilities that can be addressed later
+            - Zero indicates neutral priority
+            The score is calculated based on various factors such as code reachability, exploitability, and impact.
+          example: 0.75
+        factors:
+          type: array
+          description: List of factors that contributed to the reachability score.
+          items:
+            type: object
+            properties:
+              entity_type:
+                type: string
+                description: Type of the entity being analyzed (e.g. vuln_func, kernel_module, vuln_id)
+                example: "vuln_func"
+              entity_name:
+                type: string
+                description: Name of the relevant entity (e.g. vuln_func_1)
+                example: "vuln_func_1"
+              summary:
+                type: string
+                description: Short summary of the factor
+                example: "Function is directly called from main"
+              details:
+                type: object
+                description: Free-form dictionary with key/values that help provide more context
+                additionalProperties: true
+                example: {
+                  "call_depth": 1,
+                  "call_type": "direct",
+                  "source_file": "main.c"
+                }
+              score_change:
+                type: number
+                description: Positive, negative, or zero value that this factor contributes to the overall score
+                example: 0.5
+            required:
+              - entity_type
+              - entity_name
+              - summary
+              - score_change
+          example: [
+            {
+              "entity_type": "vuln_func",
+              "entity_name": "vuln_func_1",
+              "summary": "Function is directly called from main",
+              "details": {
+                "call_depth": 1,
+                "call_type": "direct",
+                "source_file": "main.c"
+              },
+              "score_change": 0.5
+            },
+            {
+              "entity_type": "kernel_module",
+              "entity_name": "module_1",
+              "summary": "Module is loaded at runtime",
+              "details": {
+                "load_type": "dynamic",
+                "dependencies": ["core"]
+              },
+              "score_change": 0.25
+            }
+          ]
+        project:
+          $ref: '#/components/schemas/ProjectRef'
+        projectVersion:
+          $ref: '#/components/schemas/VersionRef'
+      required:
+        - component
+        - cwes
+        - detected
+        - findingId
+        - id
+        - inKev
+        - inVcKev
+        - location
+        - risk
+        - severity
+        - title
+        - type
+        - violations
+        - warnings
+        - status
+        - project
+        - projectVersion
+    JsonErrorResponse:
+      type: object
+      description: "Represents a standard error response returned by the API."
+      properties:
+        errors:
+          type: array
+          description: "A list of errors encountered during the request."
+          items:
+            type: object
+            description: "An individual error entry containing details about the issue encountered."
+            properties:
+              error:
+                type: string
+                description: "A descriptive message explaining the error that occurred."
+              instanceLocation:
+                type: string
+                description: "The specific location in the instance where the error occurred, if applicable."
+                default: ""
+              keywordLocation:
+                type: string
+                description: "The specific schema keyword or rule that was violated, if applicable."
+                default: ""
+        valid:
+          type: boolean
+          description: "Indicates whether the request was valid. Typically 'false' in an error response."
+          default: false
+          example: false
+      required:
+        - valid
+    UpdateFindingStatusV0Request:
+      type: object
+      required:
+        - status
+      description: Request to update the status of a finding.
+      properties:
+        status:
+          type: string
+          description: The new status to set for the finding.
+          enum: [ "NOT_AFFECTED", "FALSE_POSITIVE", "IN_TRIAGE", "RESOLVED_WITH_PEDIGREE", "RESOLVED", "EXPLOITABLE" ]
+          example: "RESOLVED"
+        justification:
+          type: string
+          description: Justification for the status change.
+          enum: [ "CODE_NOT_PRESENT", "CODE_NOT_REACHABLE", "REQUIRES_CONFIGURATION", "REQUIRES_DEPENDENCY", "REQUIRES_ENVIRONMENT",
+              "PROTECTED_BY_COMPILER", "PROTECTED_AT_RUNTIME", "PROTECTED_AT_PERIMETER", "PROTECTED_BY_MITIGATING_CONTROL" ]
+          example: "CODE_NOT_REACHABLE"
+        response:
+          type: string
+          description: The response action taken for the finding.
+          enum: [ "CAN_NOT_FIX", "WILL_NOT_FIX", "UPDATE", "ROLLBACK", "WORKAROUND_AVAILABLE" ]
+          example: "UPDATE"
+        reason:
+          type: string
+          description: Optional comment explaining the status change.
+          example: "Resolved after code review"
+    LicenseDetail:
+      type: object
+      description: Describes a specific license identified for a component.
+      properties:
+        id:
+          type: string
+          description: The license's unique identifier.
+          example: 26
+        license:
+          type: string
+          description: Full name of the license.
+          example: "GNU General Public License v2.0"
+        spdx:
+          type: string
+          description: SPDX identifier for the license.
+          example: "GPL-2.0-only"
+        policy:
+          type: string
+          description: Policy status associated with the license (e.g. WARNING, VIOLATION).
+          example: "VIOLATION"
+        url:
+          type: string
+          description: URL for additional information about the license.
+          example: "https://tldrlegal.com/license/gnu-general-public-license-v2"
+        comment:
+          type: string
+          description: Optional comment associated with the license detail.
+    ProductActivationV0:
+      type: object
+      description: A Finite State activation license document.
+      properties:
+        id:
+          type: string
+          description: "A unique identifier for this product activation, as provided by Finite State."
+        version:
+          type: string
+          description: "The version identifier of this product activation.  Set to the string '0' for this object."
+        payload:
+          type: string
+          description: "The payload of this product activation.  Treat this as an opaque string."
+        signature:
+          type: string
+          description: "A digital signature attesting to the validity of the product activation.  Treat this as an opaque string."
+        key_id:
+          type: string
+          description: "The key identifier used to sign this product activation.  Treat this as an opaque string."
+      required:
+        - id
+        - version
+        - payload
+        - signature
+        - key_id
+    ProductActivationEntitlementsV0:
+      type: object
+      description: A Finite State activation entitlement.  This may be a string, a boolean, or limits.
+      additionalProperties:
+        oneOf:
+          - $ref: '#/components/schemas/ProductActivationEntitlementStringV0'
+          - $ref: '#/components/schemas/ProductActivationEntitlementBooleanV0'
+          - $ref: '#/components/schemas/ProductActivationEntitlementNumericLimitsV0'
+    ProductActivationEntitlementStringV0:
+      type: object
+      description: A string value for a single Finite State activation entitlement.
+      properties:
+        string_value:
+          type: string
+    ProductActivationEntitlementBooleanV0:
+      type: object
+      description: A boolean value for a single Finite State activation entitlement.
+      properties:
+        boolean_value:
+          type: boolean
+    ProductActivationEntitlementNumericLimitsV0:
+      type: object
+      description: Numeric limits for a single Finite State activation entitlement.
+      properties:
+        contracted_limit:
+          description: "The contracted limit on this entitlement (null if there is no contracted limit)"
+          oneOf:
+            - type: "null"
+            - type: "number"
+        warning_threshold:
+          description: |
+            The warning threshold for this entitlement.
+            When reached or exceeded, a warning will be presented.
+            Null for no warning threshold.
+          oneOf:
+            - type: "null"
+            - type: "number"
+        enforcement_threshold:
+          description: |
+            The enforcement threshold for this entitlement.
+            When reached or exceeded, the customer will be considered to be in violation of their license; denial of activities may continue.
+            Null for no enforcement threshold.
+          oneOf:
+            - type: "null"
+            - type: "number"
+      required:
+        - contracted_limit
+        - warning_threshold
+        - enforcement_threshold
+    ProductActivationConditionV0:
+      type: object
+      description: "The current condition of a product activation."
+      properties:
+        condition:
+          description: "The current state of this product activation."
+          type: string
+          enum:
+            - active
+            - inactive
+            - grace_period
+        entitlements_at_warning_threshold:
+          $ref: '#/components/schemas/ProductActivationEntitlementsV0'
+        entitlements_at_enforcement_threshold:
+          $ref: '#/components/schemas/ProductActivationEntitlementsV0'
+      required:
+        - state
+        - entitlements_at_warning_threshold
+        - entitlements_at_enforcement_threshold
+    ProjectV0:
+      type: object
+      description: A development project
+      properties:
+        id:
+          type: string
+          description: The project's unique identifier.
+          example: 1234567890123456789
+        name:
+          type: string
+          description: Name of the project.
+          example: "Amazing product 1"
+        description:
+          type: string
+          description: Description of the project.
+          example: "Amazing product 1 firmware"
+        type:
+          type: string
+          description: Type of the project (e.g., application, library, etc.).
+          example: "application"
+        createdBy:
+          type: string
+          description: Identifies the project creator.
+          example: "superstar@awesomeco.io"
+        defaultBranch:
+          $ref: "#/components/schemas/BranchV0"
+        softwareIdentifiers:
+          $ref: "#/components/schemas/SoftwareIdentifiersV0"
+    SoftwareIdentifiersV0:
+      type: object
+      description: Software identifiers for a project
+      properties:
+        cpes:
+          type: array
+          description: Common Platform Enumeration (CPE) identifiers
+          items:
+            type: string
+          example: ["cpe:2.3:a:example:product:1.0.0:*:*:*:*:*:*:*"]
+        purls:
+          type: array
+          description: Package URL (PURL) identifiers
+          items:
+            type: string
+          maxItems: 1
+          example: ["pkg:maven/org.springframework/spring-core@5.3.20"]
+        swidTags:
+          type: array
+          description: Software Identification (SWID) tags
+          items:
+            type: string
+          example: ["urn:example:software:product:1.0.0"]
+        udis:
+          type: array
+          description: Universal Device Identifiers (UDIs)
+          items:
+            type: string
+          example: ["udi:example:device:12345"]
+        upcs:
+          type: array
+          description: Universal Product Codes (UPCs)
+          items:
+            type: string
+          example: ["123456789012"]
+        gtins:
+          type: array
+          description: Global Trade Item Numbers (GTINs)
+          items:
+            type: string
+          example: ["1234567890123"]
+        gmns:
+          type: array
+          description: Global Model Numbers (GMNs)
+          items:
+            type: string
+          example: ["GMN123456"]
+        generic:
+          type: array
+          description: Generic identifiers
+          items:
+            type: string
+          example: ["generic:example:product:1.0.0"]
+    ProjectRef:
+      type: object
+      description: Reduced set of key project data.
+      properties:
+        id:
+          type: string
+          description: The project's unique identifier.
+          example: 2345678901234567891
+        name:
+          type: string
+          description: Name of the project.
+          example: "Test Project 2"
+    SbomCdx:
+      type: string
+      description: SBOM content in a CycloneDX format.
+      format: binary
+    SbomSpdx:
+      type: object
+      description: SBOM content in a SPDX format.
+      additionalProperties:
+        type: object
+    ScanV0:
+      type: object
+      description: A scan instance
+      properties:
+        id:
+          type: string
+          description: The unique identifier of the scan
+        type:
+          type: string
+          enum: [SCA, SAST, CONFIG, PYTHON, SOURCE_SCA, JAR]
+          description: The type of scan performed
+        status:
+          type: string
+          enum: [INITIAL, COMPLETED, ERROR, STARTED]
+          description: The current status of the scan
+        fsanId:
+          type: string
+          description: The Finite State Analysis ID
+        orgId:
+          type: string
+          description: The organization ID
+        completed:
+          type: string
+          format: date-time
+          description: The timestamp when the scan was completed
+        errorMessage:
+          type: string
+          description: Additional message or details about the scan
+        created:
+          type: string
+          format: date-time
+          description: The timestamp when the scan was created
+        project:
+          $ref: "#/components/schemas/ProjectRef"
+        branch:
+          $ref: "#/components/schemas/BranchRef"
+        projectVersion:
+          $ref: "#/components/schemas/VersionRef"
+    UserV0:
+      type: object
+      required: ["id", "userId", "email", "authenticationMethod", "status", "created"]
+      properties:
+        id:
+          type: string
+          description: "The server-assigned, opaque primary key of this user."
+          example: "1701"
+        userId:
+          type: string
+          description: "The (immutable once created, unique to the customer) user identifier."
+          example: "aaron.aaronson"
+        email:
+          type: string
+          description: "The email address of the user."
+          example: "aaron.aaronson@hello.example"
+        firstName:
+          type: string
+          description: "The first name of the user, if it's available."
+          example: "Aaron"
+        lastName:
+          type: string
+          description: "The last name of the user, if it's available."
+          example: "Aaronson"
+        eulaAccepted:
+          type: boolean
+          description: "Indicates whether the user has accepted the End User License Agreement (EULA)."
+          example: true
+        eulaAcceptedAt:
+          type: string
+          format: date-time
+          description: "The timestamp when the user accepted the EULA."
+          example: "2023-08-15T14:30:00Z"
+        authenticationMethod:
+          type: string
+          description: |
+            The name of the identity provider backing this user information.
+            If this is set to `finite-state`, the user is managed by the Finite State IdP.
+        created:
+          type: string
+          format: date-time
+          description: "The time this user was created as defined by RFC 3309, section 5.6"
+          example: "2024-05-14T17:32:28Z"
+        lastLoginTimestamp:
+          type: string
+          format: date-time
+          description: "The last login timestamp of this user as defined by RFC 3309, section 5.6, if it is available."
+          example: "2017-07-21T17:32:28Z"
+        status:
+          type: string
+          enum: ["ENABLED", "DISABLED", "PASSWORD_RESET_REQUIRED"]
+          description: "The current status of this user."
+        orgRoles:
+          type: array
+          description: "The list of organization roles assigned to the user"
+          items:
+            type: string
+          example: [ "Global admin" ]
+    VersionV0:
+      type: object
+      description: A version of a project's branch the provides the version's scan results.
+      properties:
+        id:
+          type: string
+          description: The version's unique identifier.
+          example: 3456789012345678913
+        name:
+          type: string
+          description: Name of the version.
+          example: "2-25 Scan 1"
+        created:
+          type: string
+          format: date-time
+          description: Timestamp when the version was created.
+          example: "2025-02-27T01:32:10Z"
+        components:
+          type: integer
+          description: Number of software components detected in this version.
+          example: 0
+        findings:
+          type: integer
+          description: Number of software findings detected in this version.
+          example: 0
+        violations:
+          type: integer
+          description: Number of policy violations identified in this version.
+          example: 0
+        warnings:
+          type: integer
+          description: Number of policy warnings identified in this version.
+          example: 0
+        project:
+          $ref: "#/components/schemas/ProjectRef"
+        branch:
+          $ref: "#/components/schemas/BranchRef"
+    VersionRef:
+      type: object
+      description: Reduced set of key version data.
+      properties:
+        id:
+          type: string
+          description: The version's unique identifier.
+          example: 3456789012345678913
+        version:
+          type: string
+          description: Name of the version.
+          example: "2-25 Scan 1"
+        created:
+          type: string
+          format: date-time
+          description: Timestamp when the version was created.
+          example: "2025-02-27T01:32:10Z"
+    AffectedComponentRef:
+      type: object
+      description: Affected component by a CVE
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the software component.
+          example: "345678901234567890"
+        projectId:
+          type: string
+          description: Unique identifier for the component's project.
+          example: "3456789012345678913"
+        projectVersionId:
+          type: string
+          description: Unique identifier for the component's project version.
+          example: "3456789012345678913"
+        name:
+          type: string
+          description: >
+            Name of the component, typically including group/artifact identifiers.
+          example: "org.springframework/spring-expression"
+        vcId:
+          type: string
+          description: Unique identifier for the version component.
+          example: "456789012345678901"
+        version:
+          type: string
+          description: The component's version number.
+          example: "4.1.6.RELEASE"
+        licenses:
+          type: string
+          description: SPDX license identifier(s) summarizing licensing of the component.
+          example: "GPL-2.0-only"
+      required:
+        - projectId
+        - projectVersionId
+        - name
+        - vcId
+        - version
+    ProjectLatestVersionV0:
+      type: object
+      description: Summary of a project and its latest version for the project's default branch
+      properties:
+        id:
+          type: string
+          description: The project's unique identifier.
+          example: "1234567890123456789"
+        name:
+          type: string
+          description: The project's name.
+          example: "Test Project 2"
+        defaultBranch:
+          type: object
+          description: Summary of the project's default branch
+          properties:
+            id:
+              type: string
+              description: The branch's unique identifier.
+              example: "1234567890123456789"
+            latestVersion:
+              type: object
+              description: A version of a project's branch the provides the version's scan results.
+              properties:
+                id:
+                  type: string
+                  description: The version's unique identifier.
+                  example: "3456789012345678913"
+                name:
+                  type: string
+                  description: Name of the version.
+                  example: "2-25 Scan 1"
+    AggregatedCveV0:
+      type: object
+      description: Aggregated CVE information including affected components and projects
+      properties:
+        cveId:
+          type: string
+          description: The CVE identifier
+          example: "CVE-2018-11776"
+        severity:
+          type: string
+          description: Qualitative severity level of the CVE.
+          example: "medium"
+        cvssSeverity:
+          type: object
+          description: CVSS-based severity information
+          properties:
+            v2:
+              type: object
+              description: CVSS v2.0 severity information
+              properties:
+                score:
+                  type: number
+                  format: float
+                  description: CVSS v2.0 base score
+                  example: 7.5
+                severity:
+                  type: string
+                  description: Derived severity level from CVSS v2.0 score
+                  enum: ["critical", "high", "medium", "low"]
+                  example: "high"
+            v3:
+              type: object
+              description: CVSS v3.x severity information
+              properties:
+                score:
+                  type: number
+                  format: float
+                  description: CVSS v3.x base score
+                  example: 8.8
+                severity:
+                  type: string
+                  description: Derived severity level from CVSS v3.x score
+                  enum: ["critical", "high", "medium", "low"]
+                  example: "high"
+            v4:
+              type: object
+              description: CVSS v4.0 severity information
+              properties:
+                score:
+                  type: number
+                  format: float
+                  description: CVSS v4.0 base score
+                  example: 8.2
+                severity:
+                  type: string
+                  description: Derived severity level from CVSS v4.0 score
+                  enum: ["critical", "high", "medium", "low"]
+                  example: "high"
+        risk:
+          type: number
+          description: Numerical risk score assigned to the CVE.
+          example: 75
+        cwes:
+          type: array
+          items:
+            type: string
+          description: List of Common Weakness Enumeration (CWE) identifiers
+          example:
+            - "CWE-770"
+        exploitMaturity:
+          type: string
+          description: Maturity level of known exploits for this CVE
+          nullable: true
+        exploitInfo:
+          type: array
+          items:
+            type: string
+          description: List of exploit attributes associated with the CVE
+          example: []
+        epssPercentile:
+          type: number
+          format: double
+          description: EPSS percentile score indicating the likelihood of exploitation
+          nullable: true
+        epssScore:
+          type: number
+          format: double
+          description: EPSS score indicating the likelihood of exploitation
+          nullable: true
+        inKev:
+          type: boolean
+          description: Indicates whether the CVE is in the Known Exploited Vulnerabilities (KEV) list
+          example: false
+        inVcKev:
+          type: boolean
+          description: Indicates whether the CVE is in the VC KEV list
+          example: false
+        firstDetected:
+          type: string
+          format: date-time
+          description: Timestamp when the CVE was first detected in any component
+          example: "2025-02-25T14:23:00Z"
+        lastDetected:
+          type: string
+          format: date-time
+          description: Timestamp when the CVE was most recently detected
+          example: "2025-03-01T09:15:00Z"
+          x-java-type: java.time.OffsetDateTime
+        affectedComponents:
+          type: array
+          description: List of components affected by this CVE
+          items:
+            $ref: "#/components/schemas/AffectedComponentRef"
+        affectedProjects:
+          type: array
+          description: List of projects containing components affected by this CVE
+          items:
+            $ref: "#/components/schemas/ProjectLatestVersionV0"
+      required:
+        - cveId
+        - severity
+        - risk
+        - cwes
+        - firstDetected
+        - lastDetected
+        - affectedComponents
+        - affectedProjects
+    ProjectUserV0:
+      type: object
+      properties:
+        projectId:
+          type: string
+          description: "A project id"
+        userId:
+          type: string
+          description: "A user id"
+          example: "john.dow"
+        email:
+          type: string
+          description: "The email of the user"
+          example: "john.doe@finitestate.io"
+        firstName:
+          type: string
+          description: "The first name of the user"
+          example: "Michael"
+        lastName:
+          type: string
+          description: "The last name of the user"
+          example: "Jordon"
+        roles:
+          type: array
+          description: "The list of project roles for a given user and project"
+          items:
+            type: string
+          example: [ "project_admin" ]
+    ProjectGroupV0:
+      type: object
+      properties:
+        projectId:
+          type: string
+          description: "A project id"
+        groupId:
+          type: string
+          description: "A group id"
+          example: "john.dow"
+        name:
+          type: string
+          description: "the name of the group"
+          example: "Engineering"
+        description:
+          type: string
+          description: "the description of the group"
+          example: "A team for engineers"
+        memberCount:
+          type: integer
+          description: "the number of team members"
+          example: 5
+        roles:
+          type: array
+          description: "The list of project roles for a given group and project"
+          items:
+            type: string
+          example: [ "Project Admin" ]
+    AuthenticatedUserV0:
+      type: object
+      properties:
+        user:
+          type: string
+          description: the username
+          example: joe_smith
+        new:
+          type: boolean
+          description: if true, indicates a first time login
+          example: true
+        lastLogin:
+          type: string
+          description: string with the UTC date formatted according to ISO 8601
+          example: "2010-01-01T19:12:11Z"
+        newNotifications:
+          type: boolean
+          description: if true, the user has new notifications
+          example: true
+        orgActions:
+          type: array
+          description: the list of organization roles assigned to the user
+          items:
+            type: string
+            example: [ "create_project", "create_user" ]
+        organization:
+          type: object
+          description: the organization of the user
+          properties:
+            id:
+              type: string
+              description: the id of the organization
+            name:
+              type: string
+              description: the name of the organization
+    UpdateProjectV0Request:
+      type: object
+      required: [name, description]
+      properties:
+        name:
+          type: string
+          description: New name for the project
+          example: "Updated Project Name"
+        description:
+          type: string
+          description: New description for the project
+          example: "Updated project description"
+        type:
+          type: string
+          description: "must be one of: application, framework, library, container, platform, operating-system, device, device-driver, firmware, file, machine-learning-model, data"
+          example: "application"
+        softwareIdentifiers:
+          $ref: "#/components/schemas/SoftwareIdentifiersV0"
+    GroupV0:
+      type: object
+      description: A group in the organization
+      properties:
+        id:
+          type: string
+          description: The group's unique identifier
+          example: "1234567890123456789"
+        name:
+          type: string
+          description: Name of the group
+          example: "Engineering Team"
+        description:
+          type: string
+          description: Description of the group
+          example: "Group for engineering team members"
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the group was created
+          example: "2025-02-25T14:23:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the group was last updated
+          example: "2025-02-26T09:15:00Z"
+        memberCount:
+          type: integer
+          description: Number of members in the group
+          example: 5
+        orgRoles:
+          type: array
+          description: "The list of organization roles assigned to the user group"
+          items:
+            type: string
+          example: [ "Global admin" ]
+    GroupMemberV0:
+      type: object
+      description: A member of a group
+      properties:
+        id:
+          type: string
+          description: The member's unique identifier
+          example: "1234567890123456789"
+        email:
+          type: string
+          description: Email address of the member
+          example: "john.doe@example.com"
+        firstName:
+          type: string
+          description: First name of the group member
+          example: "Michael"
+        lastName:
+          type: string
+          description: Last name of the group member
+          example: "Jordan"
+        addedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the member was added to the group
+          example: "2025-02-25T14:23:00Z"
+    BulkRestoreResponse:
+      type: object
+      description: Response for bulk project restore operation
+      required:
+        - status
+        - message
+        - total
+        - successful
+        - failed
+        - details
+      properties:
+        status:
+          type: string
+          description: Overall status of the restore operation
+          enum: [success, failure, partial_success]
+        message:
+          type: string
+          description: Human readable message describing the operation result
+        total:
+          type: integer
+          description: Total number of projects attempted to restore
+        successful:
+          type: integer
+          description: Number of projects successfully restored
+        failed:
+          type: integer
+          description: Number of projects that failed to restore
+        details:
+          type: array
+          description: Details about failed project restorations
+          items:
+            $ref: "#/components/schemas/BulkRestoreDetail"
+    BulkRestoreDetail:
+      type: object
+      description: Details about a failed project restoration
+      required:
+        - id
+        - name
+        - status
+        - repeatedId
+      properties:
+        id:
+          type: string
+          description: ID of the project that failed to restore
+        name:
+          type: string
+          description: Name of the project that failed to restore
+        status:
+          type: string
+          description: Status of the restore operation for this project
+          enum: [failed]
+        repeatedId:
+          type: string
+          description: ID of the existing project that caused the conflict
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      description: |
+        User API token required for authentication.
+      in: header
+      name: X-Authorization
+
