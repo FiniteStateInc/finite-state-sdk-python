@@ -6,7 +6,7 @@ This script retrieves and exports software component metadata for a specific art
 Features:
 - Uses a custom GraphQL query to fetch all software components for a given asset version.
 - Supports CSV and JSON output, with custom column ordering and property handling.
-- Filters out components with certain statuses/types and supports additional filtering by type and risk score.
+- Filters out any components that are not operating_system or package.
 - Handles authentication via a secrets file.
 - Robust error handling and logging.
 - Output filenames include asset and version names by default.
