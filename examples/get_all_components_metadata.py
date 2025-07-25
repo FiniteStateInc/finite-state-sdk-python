@@ -144,6 +144,7 @@ query GetFullComponentDetailsByAsset(
     fileName
     publisher
     originator
+    maintenanceStatus
     supplier {
       name
       url

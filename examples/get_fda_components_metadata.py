@@ -149,6 +149,7 @@ query GetFullComponentDetailsByAsset(
     fileName
     publisher
     originator
+    maintenanceStatus
     supplier {
       name
       url
@@ -366,6 +367,7 @@ def export_to_csv(components, output_file, verbose=False):
         'detailedDescription',
         'supplier.name',
         'supportEol',
+        'maintenanceStatus',
     ]
     # Fields to exclude from output
     exclude_fields = {'author', 'buildDate', 'createdBy', 'id', 'licenses[0].id', 'origin'}
